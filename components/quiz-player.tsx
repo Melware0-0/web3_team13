@@ -182,7 +182,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <p className="mt-1 text-xs text-muted-foreground">
               Sends 5 NZD token to your connected wallet:
             </p>
-            {address ? <EnsDisplay address={address} /> : <p className="text-xs text-muted-foreground">Connect wallet first</p>}
+            {address ? <EnsDisplay address={address} truncate={true} showAvatar={false} /> : <p className="text-xs text-muted-foreground">Connect wallet first</p>}
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
               {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
             </Button>
@@ -336,7 +336,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <p className="mt-1 text-xs text-muted-foreground">
               We will send {reward} dNZD directly to your connected wallet. You can view it in MetaMask.
             </p>
-            {address ? <EnsDisplay address={address} /> : <p className="text-xs text-muted-foreground">Connect wallet first</p>}
+            {address ? <EnsDisplay address={address} truncate={true} showAvatar={false} /> : <p className="text-xs text-muted-foreground">Connect wallet first</p>}
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
               {isSendingOnChain ? "Sending to MetaMask..." : "Send 5 dNZD to my wallet"}
             </Button>
