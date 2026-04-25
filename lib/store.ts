@@ -14,7 +14,8 @@ export type Tx = {
 };
 
 export type NftClaim = {
-  campaignId: string;
+  claimKey: string;
+  label: string;
   tokenId: number;
   txHash: string;
   chainId: number;
@@ -84,6 +85,11 @@ export async function hasClaimed(address: string, campaignId: string): Promise<b
   return txs.some((t) => t.campaignId === campaignId);
 }
 
+export async function getCompletedLessonCount(address: string): Promise<number> {
+  const txs = await listTxs(address);
+  return txs.length;
+}
+
 export async function listNftClaims(address: string): Promise<NftClaim[]> {
   const s = await load();
   return [...(s.nftClaims[norm(address)] ?? [])].sort((a, b) => b.ts - a.ts);
@@ -91,10 +97,10 @@ export async function listNftClaims(address: string): Promise<NftClaim[]> {
 
 export async function getNftClaim(
   address: string,
-  campaignId: string,
+  claimKey: string,
 ): Promise<NftClaim | null> {
   const claims = await listNftClaims(address);
-  return claims.find((claim) => claim.campaignId === campaignId) ?? null;
+  return claims.find((claim) => claim.claimKey === claimKey) ?? null;
 }
 
 export async function recordNftClaim(
@@ -107,7 +113,7 @@ export async function recordNftClaim(
 
   const s = await load();
   const key = norm(address);
-  const already = (s.nftClaims[key] ?? []).some((item) => item.campaignId === claim.campaignId);
+  const already = (s.nftClaims[key] ?? []).some((item) => item.claimKey === claim.claimKey);
   if (already) return { ok: false, reason: "already_claimed" };
 
   s.nftClaims[key] = [...(s.nftClaims[key] ?? []), claim];

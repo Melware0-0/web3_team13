@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { getBadgeTierForCompletedLessons } from "@/lib/badges";
 import { getCampaign } from "@/lib/campaigns";
-import { mintCampaignBadge } from "@/lib/nft";
+import { mintBadgeToken } from "@/lib/nft";
 import {
   credit,
   getBalanceCents,
+  getCompletedLessonCount,
   getNftClaim,
   hasClaimed,
   recordNftClaim,
@@ -31,6 +33,7 @@ export async function POST(req: Request) {
 
   const alreadyCredited = await hasClaimed(address, campaignId);
   let balanceCents = await getBalanceCents(address);
+  let completedLessons = await getCompletedLessonCount(address);
 
   if (!alreadyCredited) {
     const creditResult = await credit(address, campaignId, campaign.rewardCents);
@@ -39,16 +42,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: creditResult.reason }, { status });
     }
     balanceCents = creditResult.balanceCents;
+    completedLessons += 1;
   }
 
-  let nftClaim = await getNftClaim(address, campaignId);
+  const unlockedTier = getBadgeTierForCompletedLessons(completedLessons);
+  let nftClaim = unlockedTier ? await getNftClaim(address, unlockedTier.key) : null;
   let nftError: string | null = null;
 
-  if (!nftClaim) {
-    const minted = await mintCampaignBadge(address as `0x${string}`, campaignId);
+  if (unlockedTier && !nftClaim) {
+    const minted = await mintBadgeToken(address as `0x${string}`, unlockedTier.tokenId);
     if (minted.ok) {
       const record = await recordNftClaim(address, {
-        campaignId,
+        claimKey: unlockedTier.key,
+        label: unlockedTier.title,
         tokenId: minted.tokenId,
         txHash: minted.txHash,
         chainId: minted.chainId,
@@ -56,7 +62,7 @@ export async function POST(req: Request) {
         ts: Date.now(),
       });
       if (record.ok) {
-        nftClaim = await getNftClaim(address, campaignId);
+        nftClaim = await getNftClaim(address, unlockedTier.key);
       } else {
         nftError = record.reason;
       }
@@ -71,9 +77,12 @@ export async function POST(req: Request) {
     balanceCents,
     currency: "dNZD",
     alreadyCredited,
+    completedLessons,
     nft: nftClaim
       ? {
           ok: true,
+          title: nftClaim.label,
+          milestone: unlockedTier?.milestone ?? null,
           tokenId: nftClaim.tokenId,
           txHash: nftClaim.txHash,
           chainId: nftClaim.chainId,
@@ -81,7 +90,7 @@ export async function POST(req: Request) {
         }
       : {
           ok: false,
-          error: nftError ?? "mint_failed",
+          error: nftError ?? (unlockedTier ? "mint_failed" : "no_badge_unlocked"),
         },
   });
 }

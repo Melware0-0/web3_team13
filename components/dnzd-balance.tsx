@@ -7,7 +7,8 @@ import { Award, Coins, ExternalLink, History, Loader2 } from "lucide-react";
 
 type Tx = { campaignId: string; amountCents: number; ts: number };
 type NftClaim = {
-  campaignId: string;
+  claimKey: string;
+  label: string;
   tokenId: number;
   txHash: string;
   chainId: number;
@@ -121,11 +122,11 @@ export function DnzdBalance() {
             <ul className="divide-y divide-border/40 rounded-lg border border-border/40 bg-background/40">
               {nftClaims.map((claim) => (
                 <li
-                  key={`${claim.campaignId}-${claim.txHash}`}
+                  key={`${claim.claimKey}-${claim.txHash}`}
                   className="flex items-center justify-between gap-3 p-3"
                 >
                   <div>
-                    <p className="text-sm font-semibold">{claim.campaignId}</p>
+                    <p className="text-sm font-semibold">{claim.label}</p>
                     <p className="text-xs text-muted-foreground">
                       Token #{claim.tokenId} on chain {claim.chainId}
                     </p>

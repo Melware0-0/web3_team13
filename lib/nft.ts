@@ -6,7 +6,7 @@ import {
   http,
 } from "viem";
 import { baseSepolia } from "viem/chains";
-import { getCampaign } from "@/lib/campaigns";
+import { getBadgeTierByTokenId } from "@/lib/badges";
 
 const erc1155MintAbi = [
   {
@@ -40,10 +40,6 @@ const rpcUrl = process.env.BASE_SEPOLIA_RPC_URL;
 export const nftChain = baseSepolia;
 export const nftExplorerBaseUrl = "https://sepolia.basescan.org/tx";
 
-export function getBadgeTokenId(campaignId: string): number | null {
-  return getCampaign(campaignId)?.badgeTokenId ?? null;
-}
-
 export function isNftMintConfigured(): boolean {
   return Boolean(contractAddress && minterPrivateKey);
 }
@@ -72,14 +68,12 @@ export async function readBadgeBalance(
   return Number(balance);
 }
 
-export async function mintCampaignBadge(address: `0x${string}`, campaignId: string) {
+export async function mintBadgeToken(address: `0x${string}`, tokenId: number) {
   if (!contractAddress || !minterPrivateKey) {
     return { ok: false as const, reason: "nft_not_configured" };
   }
-
-  const tokenId = getBadgeTokenId(campaignId);
-  if (tokenId === null) {
-    return { ok: false as const, reason: "unknown_campaign" };
+  if (!getBadgeTierByTokenId(tokenId)) {
+    return { ok: false as const, reason: "unknown_badge_tier" };
   }
 
   const account = privateKeyToAccount(minterPrivateKey);

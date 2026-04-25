@@ -33,8 +33,16 @@ export type QuizState =
       status: "credited";
       amountCents: number;
       balanceCents: number;
+      completedLessons: number;
       nft:
-        | { ok: true; tokenId: number; txHash: string; explorerUrl: string }
+        | {
+            ok: true;
+            title: string;
+            milestone: number | null;
+            tokenId: number;
+            txHash: string;
+            explorerUrl: string;
+          }
         | { ok: false; error: string };
     }
   | { status: "error"; message: string };
@@ -100,6 +108,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             status: "credited",
             amountCents: cdata.amountCents,
             balanceCents: cdata.balanceCents,
+            completedLessons: cdata.completedLessons,
             nft: cdata.nft,
           });
         }
@@ -278,8 +287,10 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
               {state.nft.ok
-                ? `Badge NFT minted on Base Sepolia. Token #${state.nft.tokenId}.`
-                : `dNZD credited. NFT mint status: ${state.nft.error}.`}
+                ? `${state.nft.title} minted on Base Sepolia for reaching ${state.nft.milestone} completed lessons.`
+                : state.nft.error === "no_badge_unlocked"
+                  ? `dNZD credited. You have completed ${state.completedLessons} lesson${state.completedLessons === 1 ? "" : "s"}. The next NFT unlocks at 1, 3, 5, and 10 completed lessons.`
+                  : `dNZD credited. NFT mint status: ${state.nft.error}.`}
             </p>
             {state.nft.ok ? (
               <a
