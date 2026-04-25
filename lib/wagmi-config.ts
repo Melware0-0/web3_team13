@@ -1,38 +1,14 @@
-import { cookieStorage, createStorage, http } from "@wagmi/core";
-import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import type { AppKitNetwork } from "@reown/appkit/networks";
-import {
-  mainnet,
-  arbitrum,
-  polygon,
-  optimism,
-  base,
-  baseSepolia,
-} from "@reown/appkit/networks";
+import { cookieStorage, createConfig, createStorage, http } from "wagmi";
+import { injected } from "wagmi/connectors";
+import { mainnet, arbitrum, polygon, optimism, base, baseSepolia } from "wagmi/chains";
 
-// Soft fallback so dev still boots without a project ID.
-// Production should always set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID.
-const envProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
-if (!envProjectId && typeof window === "undefined") {
-  console.warn(
-    "[L2Earn] NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set — wallet modal will fail to open. " +
-      "Get a free ID at https://walletconnect.network and add it to .env.local.",
-  );
-}
-export const projectId = envProjectId ?? "DEMO_NO_PROJECT_ID";
-
-export const networks = [base, baseSepolia, mainnet, arbitrum, polygon, optimism] as [
-  AppKitNetwork,
-  ...AppKitNetwork[],
-];
-
-export const wagmiAdapter = new WagmiAdapter({
+export const config = createConfig({
   storage: createStorage({
     storage: cookieStorage,
   }),
-  ssr: false,
-  projectId,
-  networks,
+  ssr: true,
+  chains: [base, baseSepolia, mainnet, arbitrum, polygon, optimism],
+  connectors: [injected({ target: "metaMask" })],
   transports: {
     [base.id]: http(),
     [baseSepolia.id]: http(),
@@ -42,5 +18,3 @@ export const wagmiAdapter = new WagmiAdapter({
     [optimism.id]: http(),
   },
 });
-
-export const config = wagmiAdapter.wagmiConfig;

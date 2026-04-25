@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAppKitAccount } from "@reown/appkit/react";
+import { useAccount } from "wagmi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDnzd } from "@/lib/dnzd";
 import { getWallet, WALLET_UPDATED_EVENT, type WalletTx } from "@/lib/mock-wallet";
 import { Coins, History, Loader2 } from "lucide-react";
 
 export function DnzdBalance() {
-  const { address, isConnected } = useAppKitAccount();
+  const { address, isConnected } = useAccount();
   const [balanceCents, setBalanceCents] = useState<number | null>(null);
   const [txs, setTxs] = useState<WalletTx[]>([]);
   const [loading, setLoading] = useState(false);
