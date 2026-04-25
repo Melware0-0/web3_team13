@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { Web3Provider } from '@/components/web3-provider'
 
 export const metadata: Metadata = {
   title: 'L2Earn — Learn-to-Earn for the Great Handover',
@@ -34,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="font-sans antialiased">
-        {children}
+        <Web3Provider>{children}</Web3Provider>
         <Analytics />
       </body>
     </html>
