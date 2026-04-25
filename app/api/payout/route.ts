@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { createPublicClient, createWalletClient, erc20Abi, formatUnits, http, parseUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base, baseSepolia } from "viem/chains";
-import { getClaim, markClaim } from "@/lib/payout-claims";
+import {
+  evaluateClaimRisk,
+  getClaim,
+  markClaim,
+  recordClaimAttempt,
+  type ClaimSignal,
+} from "@/lib/payout-claims";
 
 export const runtime = "nodejs";
 
@@ -18,6 +24,27 @@ function badRequest(message: string) {
 
 function serverError(message: string) {
   return NextResponse.json({ ok: false, error: message }, { status: 500 });
+}
+
+function getIp(req: Request) {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
+  return req.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
+function getBrowser(req: Request) {
+  return (
+    req.headers.get("sec-ch-ua")?.trim() ||
+    req.headers.get("user-agent")?.trim() ||
+    "unknown"
+  );
+}
+
+function getDevice(req: Request) {
+  const platform = req.headers.get("sec-ch-ua-platform")?.trim();
+  const mobile = req.headers.get("sec-ch-ua-mobile")?.trim();
+  const language = req.headers.get("accept-language")?.split(",")[0]?.trim();
+  return [platform, mobile, language].filter(Boolean).join(" | ") || "unknown";
 }
 
 export async function POST(req: Request) {
@@ -37,6 +64,15 @@ export async function POST(req: Request) {
   if (!campaignId) {
     return badRequest("campaignId is required.");
   }
+
+  const claimSignal: ClaimSignal = {
+    campaignId,
+    userAddress,
+    ip: getIp(req),
+    browser: getBrowser(req),
+    device: getDevice(req),
+    userAgent: req.headers.get("user-agent")?.trim() || "unknown",
+  };
 
   const privateKey = process.env.MASTER_WALLET_PRIVATE_KEY?.trim();
   const configuredMasterAddress =
@@ -72,6 +108,7 @@ export async function POST(req: Request) {
   try {
     const existing = await getClaim(campaignId, userAddress);
     if (existing) {
+      await recordClaimAttempt(claimSignal, "already_claimed", ["Address already claimed this campaign."]);
       return NextResponse.json(
         {
           ok: false,
@@ -81,6 +118,22 @@ export async function POST(req: Request) {
         { status: 409 },
       );
     }
+
+    const risk = await evaluateClaimRisk(claimSignal);
+    if (risk.flagged) {
+      await recordClaimAttempt(claimSignal, "manual_review", risk.reasons);
+      return NextResponse.json(
+        {
+          ok: false,
+          manualReview: true,
+          error: "This claim was flagged for manual review before payout.",
+          reasons: risk.reasons,
+        },
+        { status: 403 },
+      );
+    }
+
+    await recordClaimAttempt(claimSignal, "approved");
 
     const account = privateKeyToAccount(privateKey as `0x${string}`);
     if (account.address.toLowerCase() !== configuredMasterAddress.toLowerCase()) {
@@ -151,6 +204,7 @@ export async function POST(req: Request) {
     }
 
     await markClaim(campaignId, userAddress, txHash);
+    await recordClaimAttempt(claimSignal, "paid");
 
     return NextResponse.json({
       ok: true,

@@ -46,6 +46,10 @@ export type QuizState =
   | { status: "claimed"; balanceCents: number }
   | { status: "error"; message: string };
 
+type ClaimFeedback =
+  | { kind: "manual"; message: string; reasons: string[] }
+  | { kind: "error"; message: string };
+
 type Props = {
   campaignId: string;
   rewardCents: number;
@@ -56,7 +60,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
   const chainId = useChainId();
   const [state, setState] = useState<QuizState>({ status: "idle" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [onChainMessage, setOnChainMessage] = useState<string | null>(null);
+  const [claimFeedback, setClaimFeedback] = useState<ClaimFeedback | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isSendingOnChain, setIsSendingOnChain] = useState(false);
 
@@ -65,6 +69,8 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
   async function startQuiz() {
     setState({ status: "loading" });
     setAnswers({});
+    setClaimFeedback(null);
+    setTxHash(null);
     try {
       const campaign = getCampaign(campaignId);
       if (!campaign) throw new Error("Campaign not found");
@@ -108,33 +114,17 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
         total: campaign.quizQuestions.length,
         feedback,
       });
-
-      if (passed && address) {
-        const credit = creditWallet(address, campaignId, rewardCents);
-        if (credit.ok) {
-          setState({
-            status: "credited",
-            amountCents: rewardCents,
-            balanceCents: credit.balanceCents,
-          });
-        } else if (credit.reason === "already_claimed" && typeof credit.balanceCents === "number") {
-          setState({
-            status: "claimed",
-            balanceCents: credit.balanceCents,
-          });
-        }
-      }
     } catch (e) {
       setState({ status: "error", message: (e as Error).message });
     }
   }
 
   async function sendRealNzdOnChain() {
-    setOnChainMessage(null);
+    setClaimFeedback(null);
     setTxHash(null);
 
-    if (!isConnected || !address || isSendingOnChain) {
-      setOnChainMessage("Connect MetaMask first.");
+    if (!isConnected || !address || isSendingOnChain || state.status !== "graded" || !state.passed) {
+      setClaimFeedback({ kind: "error", message: "Pass the quiz and connect MetaMask first." });
       return;
     }
 
@@ -154,22 +144,50 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
         txHash?: string;
         message?: string;
         error?: string;
+        manualReview?: boolean;
+        reasons?: string[];
       };
 
       if (!res.ok || !payload.ok) {
-        setOnChainMessage(payload.error ?? payload.message ?? "On-chain transfer failed.");
+        if (payload.manualReview) {
+          setClaimFeedback({
+            kind: "manual",
+            message: payload.error ?? payload.message ?? "This claim needs manual review.",
+            reasons: payload.reasons ?? [],
+          });
+          return;
+        }
+        setClaimFeedback({
+          kind: "error",
+          message: payload.error ?? payload.message ?? "On-chain transfer failed.",
+        });
         return;
       }
 
       if (payload.txHash) {
         setTxHash(payload.txHash);
       }
-      setOnChainMessage(
-        payload.message ?? `Sent ${NZD_SEND_AMOUNT} NZD from master wallet to ${address}.`,
-      );
+      const credit = creditWallet(address, campaignId, rewardCents);
+      if (credit.ok) {
+        setState({
+          status: "credited",
+          amountCents: rewardCents,
+          balanceCents: credit.balanceCents,
+        });
+      } else if (credit.reason === "already_claimed" && typeof credit.balanceCents === "number") {
+        setState({
+          status: "claimed",
+          balanceCents: credit.balanceCents,
+        });
+      } else {
+        setClaimFeedback({
+          kind: "error",
+          message: payload.message ?? `Sent ${NZD_SEND_AMOUNT} NZD from master wallet to ${address}.`,
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setOnChainMessage(`On-chain transfer failed: ${message}`);
+      setClaimFeedback({ kind: "error", message: `On-chain transfer failed: ${message}` });
     } finally {
       setIsSendingOnChain(false);
     }
@@ -194,34 +212,6 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
               Connect Wallet
             </Button>
           </Link>
-          <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
-            <p className="text-sm font-semibold">On-chain payout</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Sends 5 NZD token to your connected wallet:
-            </p>
-            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
-            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
-              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
-            </Button>
-            {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
-            {txHash ? (
-              <p className="mt-1 break-all text-[11px] text-muted-foreground">
-                Tx:{" "}
-                {EXPLORER_TX_BASE[chainId] ? (
-                  <a
-                    href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:no-underline"
-                  >
-                    {txHash}
-                  </a>
-                ) : (
-                  txHash
-                )}
-              </p>
-            ) : null}
-          </div>
         </CardContent>
       </Card>
     );
@@ -244,34 +234,6 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <Sparkles className="h-4 w-4" />
             Start AI Quiz
           </Button>
-          <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
-            <p className="text-sm font-semibold">On-chain payout</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Sends 5 NZD token to your connected wallet:
-            </p>
-            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
-            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
-              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
-            </Button>
-            {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
-            {txHash ? (
-              <p className="mt-1 break-all text-[11px] text-muted-foreground">
-                Tx:{" "}
-                {EXPLORER_TX_BASE[chainId] ? (
-                  <a
-                    href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:no-underline"
-                  >
-                    {txHash}
-                  </a>
-                ) : (
-                  txHash
-                )}
-              </p>
-            ) : null}
-          </div>
         </CardContent>
       </Card>
     );
@@ -356,7 +318,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
           )}
           <AlertDescription className="ml-2 text-base font-semibold">
             {state.passed
-              ? `Passed - ${state.score}/${state.total}. Crediting your wallet...`
+              ? `Passed - ${state.score}/${state.total}. You can claim your payout now.`
               : `Not quite - ${state.score}/${state.total}. Try again to earn ${reward} dNZD.`}
           </AlertDescription>
         </Alert>
@@ -380,7 +342,77 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <Sparkles className="h-4 w-4" />
             Try a fresh quiz
           </Button>
-        ) : null}
+        ) : (
+          <div className="space-y-3">
+            <Card className="border-border/60 bg-card/60">
+              <CardContent className="space-y-3 p-5">
+                <div>
+                  <p className="text-sm font-semibold">Claim payout</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Before sending from the master wallet, the server records your IP, browser,
+                    device, and wallet address. Suspicious claims are routed to manual review.
+                  </p>
+                  <p className="mt-2 break-all text-xs font-mono text-muted-foreground">{address}</p>
+                </div>
+                <Button
+                  size="lg"
+                  onClick={sendRealNzdOnChain}
+                  className="w-full gap-2 font-semibold"
+                  disabled={isSendingOnChain}
+                >
+                  {isSendingOnChain ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Checking claim and sending payout...
+                    </>
+                  ) : (
+                    <>Claim reward (+{reward} dNZD)</>
+                  )}
+                </Button>
+                {claimFeedback ? (
+                  <Alert variant={claimFeedback.kind === "manual" ? "default" : "destructive"}>
+                    {claimFeedback.kind === "manual" ? (
+                      <Coins className="h-5 w-5 text-primary" />
+                    ) : (
+                      <XCircle className="h-5 w-5" />
+                    )}
+                    <AlertDescription className="ml-2">
+                      {claimFeedback.message}
+                      {claimFeedback.kind === "manual" && claimFeedback.reasons.length > 0 ? (
+                        <ul className="mt-2 list-disc pl-5 text-sm">
+                          {claimFeedback.reasons.map((reason) => (
+                            <li key={reason}>{reason}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+                {txHash ? (
+                  <p className="break-all text-[11px] text-muted-foreground">
+                    Tx:{" "}
+                    {EXPLORER_TX_BASE[chainId] ? (
+                      <a
+                        href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:no-underline"
+                      >
+                        {txHash}
+                      </a>
+                    ) : (
+                      txHash
+                    )}
+                  </p>
+                ) : null}
+              </CardContent>
+            </Card>
+            <Button size="lg" onClick={startQuiz} variant="outline" className="w-full gap-2 font-semibold">
+              <Sparkles className="h-4 w-4" />
+              Try a fresh quiz
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
