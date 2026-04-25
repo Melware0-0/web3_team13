@@ -13,28 +13,54 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const metaMaskDownloadUrl = "https://metamask.io/download/";
+  const metaMaskDownloadUrl = "https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn";
+  const metaMaskExtensionUrl = "chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html";
+
+  type MetaMaskProvider = {
+    isMetaMask?: boolean;
+    request: (args: { method: string }) => Promise<unknown>;
+  };
+
+  const getMetaMaskProvider = (): MetaMaskProvider | null => {
+    const eth = (window as Window & {
+      ethereum?: MetaMaskProvider & { providers?: MetaMaskProvider[] };
+    }).ethereum;
+
+    if (!eth) return null;
+    if (Array.isArray(eth.providers)) {
+      const provider = eth.providers.find((provider) => provider?.isMetaMask);
+      return provider ?? null;
+    }
+    return eth.isMetaMask ? eth : null;
+  };
+
+  const openMetaMaskExtension = () => {
+    const tab = window.open(metaMaskExtensionUrl, "_blank", "noopener,noreferrer");
+    if (!tab) {
+      window.open(metaMaskDownloadUrl, "_blank", "noopener,noreferrer");
+    }
+  };
 
   const connectMetaMask = async () => {
-    const eth = (window as Window & { ethereum?: { isMetaMask?: boolean; request: (args: { method: string }) => Promise<string[]> } }).ethereum;
-
-    if (!eth || !eth.isMetaMask) {
+    const metaMaskProvider = getMetaMaskProvider();
+    if (!metaMaskProvider) {
       window.open(metaMaskDownloadUrl, "_blank", "noopener,noreferrer");
       return;
     }
 
     try {
-      await eth.request({ method: "eth_requestAccounts" });
+      await metaMaskProvider.request({ method: "eth_requestAccounts" });
     } catch (error) {
-      // If MetaMask already has a pending connect request, bring focus to the extension.
       if (
         typeof error === "object" &&
         error !== null &&
         "code" in error &&
         (error as { code?: number }).code === -32002
       ) {
-        window.alert("MetaMask already has a pending connection request. Please open the extension and approve it.");
+        openMetaMaskExtension();
+        return;
       }
+      window.open(metaMaskDownloadUrl, "_blank", "noopener,noreferrer");
     }
   };
 
