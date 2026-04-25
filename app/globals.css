@@ -75,8 +75,13 @@
 }
 
 @theme inline {
+<<<<<<< HEAD
   --font-sans: 'Geist', 'Geist Fallback';
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+=======
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-dm-sans);
+>>>>>>> d4efb88 (Delete *.css 的 @import in app/globals.css)
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
