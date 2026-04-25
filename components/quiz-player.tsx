@@ -229,34 +229,6 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <Sparkles className="h-4 w-4" />
             Start AI Quiz
           </Button>
-          <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
-            <p className="text-sm font-semibold">On-chain payout</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Sends 5 NZD token to your connected wallet:
-            </p>
-            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
-            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
-              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
-            </Button>
-            {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
-            {txHash ? (
-              <p className="mt-1 break-all text-[11px] text-muted-foreground">
-                Tx:{" "}
-                {EXPLORER_TX_BASE[chainId] ? (
-                  <a
-                    href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:no-underline"
-                  >
-                    {txHash}
-                  </a>
-                ) : (
-                  txHash
-                )}
-              </p>
-            ) : null}
-          </div>
         </CardContent>
       </Card>
     );
@@ -366,8 +338,11 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <p className="mt-1 text-xs text-muted-foreground">
               Sends {reward} NZD token to your connected wallet:
             </p>
+            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
+            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
+              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
             <div className="mt-1 flex items-center gap-2">
-              {ensAvatar && (
+              {ensAvatar ? (
                 <Image
                   src={ensAvatar}
                   alt="ENS Avatar"
@@ -375,8 +350,8 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
                   height={20}
                   className="h-5 w-5 rounded-full"
                 />
-              )}
-              <p className="break-all text-xs font-mono">{displayAddress}</p>
+              ) : null}
+              <p className="break-all text-xs font-mono">{displayAddress ?? "Connect wallet first"}</p>
             </div>
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
               {isSendingOnChain ? "Sending from master wallet..." : `Complete Campaign (+${reward} NZD)`}
@@ -384,7 +359,19 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
             {txHash ? (
               <p className="mt-1 break-all text-[11px] text-muted-foreground">
-                Tx: <span className="font-mono">{txHash}</span>
+                Tx:{" "}
+                {EXPLORER_TX_BASE[chainId] ? (
+                  <a
+                    href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:no-underline"
+                  >
+                    {txHash}
+                  </a>
+                ) : (
+                  txHash
+                )}
               </p>
             ) : null}
           </div>
