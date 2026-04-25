@@ -8,7 +8,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCampaign } from "@/lib/campaigns";
+import { useEns, formatAddress } from "@/lib/useEns";
 import { CheckCircle2, XCircle, Sparkles, Wallet, Loader2, Coins, ExternalLink } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export type QuizQuestion = {
@@ -39,6 +41,7 @@ type Props = {
 
 export function QuizPlayer({ campaignId, rewardCents }: Props) {
   const { address, isConnected } = useAppKitAccount();
+  const { ensName, ensAvatar } = useEns(address);
   const [state, setState] = useState<QuizState>({ status: "idle" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSendingOnChain, setIsSendingOnChain] = useState(false);
@@ -46,6 +49,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
   const [txHash, setTxHash] = useState<string | null>(null);
 
   const reward = (rewardCents / 100).toFixed(2);
+  const displayAddress = ensName || address;
 
   async function startQuiz() {
     setState({ status: "loading" });
@@ -294,7 +298,18 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <p className="mt-1 text-xs text-muted-foreground">
               Sends {reward} NZD token to your connected wallet:
             </p>
-            <p className="mt-1 break-all text-xs font-mono">{address}</p>
+            <div className="mt-1 flex items-center gap-2">
+              {ensAvatar && (
+                <Image
+                  src={ensAvatar}
+                  alt="ENS Avatar"
+                  width={20}
+                  height={20}
+                  className="h-5 w-5 rounded-full"
+                />
+              )}
+              <p className="break-all text-xs font-mono">{displayAddress}</p>
+            </div>
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
               {isSendingOnChain ? "Sending from master wallet..." : `Complete Campaign (+${reward} NZD)`}
             </Button>

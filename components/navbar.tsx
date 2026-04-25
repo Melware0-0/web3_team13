@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Menu, X, Wallet, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { useEns, formatAddress } from "@/lib/useEns";
 
 const navLinks = [
   { href: "/", label: "HOME" },
@@ -14,6 +16,7 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { ensName, ensAvatar } = useEns(walletAddress || undefined);
 
   useEffect(() => {
     const checkWalletConnection = async () => {
@@ -98,9 +101,19 @@ export function Navbar() {
               className="gap-2 font-semibold"
               onClick={openMetaMask}
               variant="outline"
+              title={walletAddress}
             >
-              <Wallet className="h-4 w-4" />
-              {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              {ensAvatar && (
+                <Image
+                  src={ensAvatar}
+                  alt="ENS Avatar"
+                  width={16}
+                  height={16}
+                  className="h-4 w-4 rounded-full"
+                />
+              )}
+              {!ensAvatar && <Wallet className="h-4 w-4" />}
+              {ensName || `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
             </Button>
           ) : (
             <Button
@@ -146,9 +159,19 @@ export function Navbar() {
                   setMobileMenuOpen(false);
                 }}
                 variant="outline"
+                title={walletAddress}
               >
-                <Wallet className="h-4 w-4" />
-                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                {ensAvatar && (
+                  <Image
+                    src={ensAvatar}
+                    alt="ENS Avatar"
+                    width={16}
+                    height={16}
+                    className="h-4 w-4 rounded-full"
+                  />
+                )}
+                {!ensAvatar && <Wallet className="h-4 w-4" />}
+                {ensName || `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
               </Button>
             ) : (
               <Button
