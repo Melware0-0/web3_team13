@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useAccount, useBalance, useConnect, useDisconnect, useChainId } from "wagmi";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAccount, useBalance, useConnect, useDisconnect, useChainId, useReconnect } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet, Copy, ExternalLink, LogOut } from "lucide-react";
@@ -24,16 +25,70 @@ function MetaMaskLogo() {
 }
 
 export function WalletConnector() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [awaitingApproval, setAwaitingApproval] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const connectLockRef = useRef(false);
   const { address, isConnected, status } = useAccount();
   const chainId = useChainId();
   const { connectAsync, connectors, error: connectError, isPending: isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
+  const { reconnectAsync } = useReconnect();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isConnected && mounted) {
+      router.replace("/campaigns");
+    }
+  }, [isConnected, mounted, router]);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const removeWalletModal = () => {
+      document
+        .querySelectorAll("w3m-modal, w3m-router-container, wui-modal, w3m-account-modal, w3m-connect-modal")
+        .forEach((node) => node.remove());
+    };
+
+    removeWalletModal();
+    const observer = new MutationObserver(removeWalletModal);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [mounted]);
+
+  useEffect(() => {
+    if (!awaitingApproval || !mounted) return;
+
+    let cancelled = false;
+    const timer = window.setInterval(async () => {
+      try {
+        const ethereum = (window as { ethereum?: any }).ethereum;
+        if (!ethereum?.request) return;
+        const accounts = await ethereum.request({ method: "eth_accounts" });
+        if (!cancelled && Array.isArray(accounts) && accounts.length > 0) {
+          await reconnectAsync();
+          setAwaitingApproval(false);
+          setLocalError(null);
+        }
+      } catch {
+        // Ignore polling errors while waiting for user approval in extension.
+      }
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [awaitingApproval, mounted, reconnectAsync]);
 
   const { data: balance } = useBalance({
     address: address as `0x${string}` | undefined,
@@ -79,21 +134,48 @@ export function WalletConnector() {
   };
 
   const connectBrowserMetaMask = async () => {
-    if (isConnecting) return;
+    if (isConnecting || awaitingApproval || isRequesting || connectLockRef.current) return;
+    connectLockRef.current = true;
+    setIsRequesting(true);
     setLocalError(null);
 
-    if (!hasMetaMaskProvider) {
-      window.location.assign("https://metamask.io/download/");
-      return;
-    }
-
-    if (!metaMaskConnector) return;
-
     try {
+      if (!hasMetaMaskProvider) {
+        window.location.assign("https://metamask.io/download/");
+        return;
+      }
+
+      const ethereum = (window as { ethereum?: any }).ethereum;
+      const metaMaskProvider = Array.isArray(ethereum?.providers)
+        ? ethereum.providers.find((provider: any) => provider?.isMetaMask)
+        : ethereum;
+
+      if (!metaMaskProvider?.isMetaMask) {
+        window.location.assign("https://metamask.io/download/");
+        return;
+      }
+
+      // Explicitly request account permissions so MetaMask opens its extension approval UI.
+      try {
+        await metaMaskProvider.request({
+          method: "wallet_requestPermissions",
+          params: [{ eth_accounts: {} }],
+        });
+      } catch {
+        // Fallback for environments that only support eth_requestAccounts.
+        await metaMaskProvider.request({ method: "eth_requestAccounts" });
+      }
+
+      if (!metaMaskConnector) {
+        setLocalError("MetaMask was detected, but connector was unavailable. Reload and try again.");
+        return;
+      }
+
       await connectAsync({ connector: metaMaskConnector });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (/already pending|requestPermissions.*pending|wallet_requestPermissions.*pending/i.test(message)) {
+        setAwaitingApproval(true);
         setLocalError("MetaMask approval is already pending. Open MetaMask and approve or reject the request first.");
         return;
       }
@@ -102,6 +184,9 @@ export function WalletConnector() {
         return;
       }
       setLocalError(message);
+    } finally {
+      connectLockRef.current = false;
+      setIsRequesting(false);
     }
   };
 
@@ -115,9 +200,14 @@ export function WalletConnector() {
           <CardTitle className="text-2xl">MetaMask</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <Button onClick={connectBrowserMetaMask} size="lg" className="w-full gap-2" disabled={isConnecting}>
+          <Button
+            onClick={connectBrowserMetaMask}
+            size="lg"
+            className="w-full gap-2"
+            disabled={isConnecting || isRequesting || awaitingApproval}
+          >
             <Wallet className="h-5 w-5" />
-            Connect Wallet
+            {awaitingApproval ? "Awaiting MetaMask approval..." : isRequesting ? "Opening MetaMask..." : "Connect MetaMask"}
           </Button>
           {connectHint ? <p className="text-center text-xs text-muted-foreground">{connectHint}</p> : null}
         </CardContent>

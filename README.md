@@ -36,6 +36,23 @@ npm run dev
 
 Open http://localhost:3000.
 
+## Master wallet payout config
+
+To send the completion payout from a server-side master wallet, set these in `.env.local`:
+
+```bash
+MASTER_WALLET_PRIVATE_KEY=0x...
+MASTER_WALLET_ADDRESS=0xC7Fd206cC5534700B06A760CeAd2A0602aF036b7
+EVM_RPC_URL=https://sepolia.base.org
+EVM_CHAIN_ID=84532
+NZD_TOKEN_ADDRESS=0x63ee4b77d3912DC7bCe711c3BE7bF12D532F1853
+NZD_TOKEN_DECIMALS=18
+NZD_PAYOUT_AMOUNT=5
+```
+
+Without these variables, `/api/payout` will return a configuration error and no on-chain transfer is sent.
+`MASTER_WALLET_PRIVATE_KEY` must derive to `MASTER_WALLET_ADDRESS`, otherwise payout calls are rejected.
+
 ## Demo path (Sunday, 5pm)
 
 1. **`/`** — NewMoney-themed landing. Click "Browse Campaigns".
