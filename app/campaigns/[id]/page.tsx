@@ -27,6 +27,10 @@ export default async function CampaignDetailPage({
   const { id } = await params;
   const campaign = getCampaign(id);
   if (!campaign) notFound();
+  const transcriptParagraphs = campaign.transcript
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
 
   const headersList = await headers();
   const cookies = headersList.get("cookie");
@@ -68,17 +72,26 @@ export default async function CampaignDetailPage({
             </div>
           </header>
 
-          <div className="mb-8 overflow-hidden rounded-xl border border-border/60 bg-black/40">
-            <div className="aspect-video w-full">
-              <iframe
-                src={campaign.videoUrl}
-                title={campaign.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="h-full w-full"
-              />
+          <section className="mb-8 rounded-xl border border-border/60 bg-card/60 p-6 md:p-8">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+                  Campaign Brief
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-foreground md:text-3xl">
+                  Read the explanation, then take the quiz
+                </h2>
+              </div>
+              <span className="rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground">
+                {campaign.transcript.split(/\s+/).length} words
+              </span>
             </div>
-          </div>
+            <div className="space-y-4 text-base leading-7 text-muted-foreground">
+              {transcriptParagraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+            </div>
+          </section>
 
           <QuizPlayer campaignId={campaign.id} rewardCents={campaign.rewardCents} />
         </div>

@@ -79,33 +79,6 @@ function parseJsonArray(text: string): Record<string, unknown>[] {
   return JSON.parse(raw.slice(start, end + 1));
 }
 
-// ---------------- in-memory quiz session cache ----------------
-// Keyed by quizId, holds the full questions including correctIndex.
-// Stripped down to client-safe shape on the wire. Single-process dev fine.
-const QUIZ_CACHE = new Map<string, { questions: GeneratedQuestion[]; ts: number }>();
-const TTL_MS = 30 * 60 * 1000; // 30 min
-
-export function rememberQuiz(quizId: string, questions: GeneratedQuestion[]): void {
-  // Sweep stale entries occasionally.
-  if (QUIZ_CACHE.size > 200) {
-    const cutoff = Date.now() - TTL_MS;
-    for (const [k, v] of QUIZ_CACHE) {
-      if (v.ts < cutoff) QUIZ_CACHE.delete(k);
-    }
-  }
-  QUIZ_CACHE.set(quizId, { questions, ts: Date.now() });
-}
-
-export function recallQuiz(quizId: string): GeneratedQuestion[] | null {
-  const hit = QUIZ_CACHE.get(quizId);
-  if (!hit) return null;
-  if (Date.now() - hit.ts > TTL_MS) {
-    QUIZ_CACHE.delete(quizId);
-    return null;
-  }
-  return hit.questions;
-}
-
 function stubQuiz(): GeneratedQuestion[] {
   return [
     {

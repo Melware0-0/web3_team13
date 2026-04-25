@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { generateQuiz, rememberQuiz } from "@/lib/anthropic";
+import { generateQuiz } from "@/lib/anthropic";
 import { getCampaign } from "@/lib/campaigns";
+import { rememberQuizSession } from "@/lib/store";
 
 export const runtime = "nodejs";
 
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
   }
 
   const quizId = `${campaignId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-  rememberQuiz(quizId, full);
+  await rememberQuizSession(quizId, full);
 
   // Strip correctIndex / explanation before sending to client.
   const safe = full.map((q) => ({

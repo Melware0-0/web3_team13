@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import type { GeneratedQuestion } from "@/lib/anthropic";
 
 /**
  * File-backed dNZD ledger. Mock for the hackathon — no chain involved.
@@ -17,6 +18,8 @@ type StoreShape = {
   balances: Record<string, number>;
   // address (lowercased) -> tx history
   txs: Record<string, Tx[]>;
+  // quizId -> generated quiz payload with expiry timestamp
+  quizSessions: Record<string, { questions: GeneratedQuestion[]; ts: number }>;
 };
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -29,9 +32,14 @@ async function load(): Promise<StoreShape> {
   if (cache) return cache;
   try {
     const raw = await fs.readFile(DATA_FILE, "utf8");
-    cache = JSON.parse(raw) as StoreShape;
+    const parsed = JSON.parse(raw) as Partial<StoreShape>;
+    cache = {
+      balances: parsed.balances ?? {},
+      txs: parsed.txs ?? {},
+      quizSessions: parsed.quizSessions ?? {},
+    };
   } catch {
-    cache = { balances: {}, txs: {} };
+    cache = { balances: {}, txs: {}, quizSessions: {} };
   }
   return cache;
 }
@@ -90,3 +98,32 @@ export async function credit(
 }
 
 export const formatDnzd = (cents: number): string => (cents / 100).toFixed(2);
+
+const QUIZ_TTL_MS = 30 * 60 * 1000;
+
+export async function rememberQuizSession(
+  quizId: string,
+  questions: GeneratedQuestion[],
+): Promise<void> {
+  const s = await load();
+  const cutoff = Date.now() - QUIZ_TTL_MS;
+
+  for (const [key, value] of Object.entries(s.quizSessions)) {
+    if (value.ts < cutoff) delete s.quizSessions[key];
+  }
+
+  s.quizSessions[quizId] = { questions, ts: Date.now() };
+  await persist();
+}
+
+export async function recallQuizSession(quizId: string): Promise<GeneratedQuestion[] | null> {
+  const s = await load();
+  const hit = s.quizSessions[quizId];
+  if (!hit) return null;
+  if (Date.now() - hit.ts > QUIZ_TTL_MS) {
+    delete s.quizSessions[quizId];
+    await persist();
+    return null;
+  }
+  return hit.questions;
+}

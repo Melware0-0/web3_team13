@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { recallQuiz } from "@/lib/anthropic";
+import { recallQuizSession } from "@/lib/store";
 
 export const runtime = "nodejs";
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "missing_quizId" }, { status: 400 });
   }
 
-  const questions = recallQuiz(quizId);
+  const questions = await recallQuizSession(quizId);
   if (!questions) {
     return NextResponse.json(
       { error: "quiz_expired", message: "Start a fresh quiz." },

@@ -6,10 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
+    "@fontsource/dm-sans": "^5.2.8",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "1.1.15",

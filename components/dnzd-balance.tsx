@@ -57,7 +57,7 @@ export function DnzdBalance() {
           {loading && balance === null ? (
             <div className="mt-1 flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Loading…</span>
+              <span className="text-sm">Loading...</span>
             </div>
           ) : (
             <p className="mt-1 text-3xl font-black text-primary">
@@ -86,9 +86,7 @@ export function DnzdBalance() {
                 <li key={`${t.campaignId}-${t.ts}`} className="flex items-center justify-between p-3">
                   <div>
                     <p className="text-sm font-semibold">{t.campaignId}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(t.ts).toLocaleString()}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{new Date(t.ts).toLocaleString()}</p>
                   </div>
                   <span className="text-sm font-bold text-primary">
                     +{(t.amountCents / 100).toFixed(2)} dNZD
