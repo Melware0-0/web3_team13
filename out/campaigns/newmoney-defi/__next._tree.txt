@@ -1,0 +1,3 @@
+:HL["/web3_team13/_next/static/chunks/01z4krp5d.3if.css","style"]
+:HC["/",""]
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"campaigns","param":null,"prefetchHints":0,"slots":{"children":{"name":"id","param":{"type":"d","key":"newmoney-defi","siblings":null},"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}},"staleTime":300,"buildId":"gml56uyR_HowVCAs82rhu"}

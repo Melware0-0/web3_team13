@@ -7,9 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { creditWallet } from "@/lib/mock-wallet";
 import { getCampaign } from "@/lib/campaigns";
-import { CheckCircle2, XCircle, Sparkles, Wallet, Loader2, Coins } from "lucide-react";
+import { CheckCircle2, XCircle, Sparkles, Wallet, Loader2, Coins, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 export type QuizQuestion = {
@@ -31,8 +30,6 @@ export type QuizState =
       total: number;
       feedback: { questionId: string; correct: boolean; explanation: string }[];
     }
-  | { status: "credited"; amountCents: number; balanceCents: number }
-  | { status: "claimed"; balanceCents: number }
   | { status: "error"; message: string };
 
 type Props = {
@@ -44,6 +41,9 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
   const { address, isConnected } = useAppKitAccount();
   const [state, setState] = useState<QuizState>({ status: "idle" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [isSendingOnChain, setIsSendingOnChain] = useState(false);
+  const [onChainMessage, setOnChainMessage] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   const reward = (rewardCents / 100).toFixed(2);
 
@@ -93,24 +93,54 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
         total: campaign.quizQuestions.length,
         feedback,
       });
-
-      if (passed && address) {
-        const credit = creditWallet(address, campaignId, rewardCents);
-        if (credit.ok) {
-          setState({
-            status: "credited",
-            amountCents: rewardCents,
-            balanceCents: credit.balanceCents,
-          });
-        } else if (credit.reason === "already_claimed" && typeof credit.balanceCents === "number") {
-          setState({
-            status: "claimed",
-            balanceCents: credit.balanceCents,
-          });
-        }
-      }
     } catch (e) {
       setState({ status: "error", message: (e as Error).message });
+    }
+  }
+
+  async function sendRealNzdOnChain() {
+    setOnChainMessage(null);
+    setTxHash(null);
+
+    if (!isConnected || !address || isSendingOnChain) {
+      setOnChainMessage("Connect wallet first.");
+      return;
+    }
+
+    setIsSendingOnChain(true);
+    try {
+      const res = await fetch("/api/payout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userAddress: address,
+          campaignId,
+        }),
+      });
+
+      const payload = (await res.json()) as {
+        ok?: boolean;
+        txHash?: string;
+        message?: string;
+        error?: string;
+      };
+
+      if (!res.ok || !payload.ok) {
+        setOnChainMessage(payload.error ?? payload.message ?? "On-chain transfer failed.");
+        return;
+      }
+
+      if (payload.txHash) {
+        setTxHash(payload.txHash);
+      }
+      setOnChainMessage(
+        payload.message ?? `Sent ${reward} NZD from master wallet to ${address}.`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setOnChainMessage(`On-chain transfer failed: ${message}`);
+    } finally {
+      setIsSendingOnChain(false);
     }
   }
 
@@ -239,7 +269,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
           )}
           <AlertDescription className="ml-2 text-base font-semibold">
             {state.passed
-              ? `Passed - ${state.score}/${state.total}. Crediting your wallet...`
+              ? `Passed - ${state.score}/${state.total}.`
               : `Not quite - ${state.score}/${state.total}. Try again to earn ${reward} dNZD.`}
           </AlertDescription>
         </Alert>
@@ -258,61 +288,30 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             </CardContent>
           </Card>
         ))}
-        {!state.passed ? (
+        {state.passed ? (
+          <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
+            <p className="text-sm font-semibold">On-chain payout</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sends {reward} NZD token to your connected wallet:
+            </p>
+            <p className="mt-1 break-all text-xs font-mono">{address}</p>
+            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
+              {isSendingOnChain ? "Sending from master wallet..." : `Complete Campaign (+${reward} NZD)`}
+            </Button>
+            {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
+            {txHash ? (
+              <p className="mt-1 break-all text-[11px] text-muted-foreground">
+                Tx: <span className="font-mono">{txHash}</span>
+              </p>
+            ) : null}
+          </div>
+        ) : (
           <Button size="lg" onClick={startQuiz} className="w-full gap-2 font-semibold">
             <Sparkles className="h-4 w-4" />
             Try a fresh quiz
           </Button>
-        ) : null}
+        )}
       </div>
-    );
-  }
-
-  if (state.status === "credited") {
-    return (
-      <Card className="border-primary/40 bg-primary/10">
-        <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/20 text-primary">
-            <Coins className="h-7 w-7" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-black">+{(state.amountCents / 100).toFixed(2)} dNZD</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              New balance: {(state.balanceCents / 100).toFixed(2)} dNZD
-            </p>
-          </div>
-          <Link href="/wallet">
-            <Button size="lg" className="gap-2 font-semibold">
-              <Wallet className="h-4 w-4" />
-              View Wallet
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (state.status === "claimed") {
-    return (
-      <Card className="border-border/60 bg-card/60">
-        <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/20 text-primary">
-            <Coins className="h-7 w-7" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-black">Reward already claimed</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              You already earned this campaign payout. Current balance: {(state.balanceCents / 100).toFixed(2)} dNZD
-            </p>
-          </div>
-          <Link href="/wallet">
-            <Button size="lg" className="gap-2 font-semibold">
-              <Wallet className="h-4 w-4" />
-              View Wallet
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
     );
   }
 
