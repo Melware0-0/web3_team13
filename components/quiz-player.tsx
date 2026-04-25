@@ -176,34 +176,6 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
               Connect Wallet
             </Button>
           </Link>
-          <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
-            <p className="text-sm font-semibold">On-chain payout</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Sends 5 NZD token to your connected wallet:
-            </p>
-            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
-            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
-              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
-            </Button>
-            {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
-            {txHash ? (
-              <p className="mt-1 break-all text-[11px] text-muted-foreground">
-                Tx:{" "}
-                {EXPLORER_TX_BASE[chainId] ? (
-                  <a
-                    href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:no-underline"
-                  >
-                    {txHash}
-                  </a>
-                ) : (
-                  txHash
-                )}
-              </p>
-            ) : null}
-          </div>
         </CardContent>
       </Card>
     );
@@ -331,13 +303,13 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
         ))}
         {state.passed ? (
           <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
-            <p className="text-sm font-semibold">Claim your 5 dNZD reward</p>
+            <p className="text-sm font-semibold">Claim your reward</p>
             <p className="mt-1 text-xs text-muted-foreground">
               We will send {reward} dNZD directly to your connected wallet. You can view it in MetaMask.
             </p>
             <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
-              {isSendingOnChain ? "Sending to MetaMask..." : "Send 5 dNZD to my wallet"}
+              {isSendingOnChain ? "Sending to MetaMask..." : "Send reward to my wallet"}
             </Button>
             {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
             {txHash ? (
