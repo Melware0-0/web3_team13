@@ -1,20 +1,15 @@
-import { cookieStorage, createConfig, createStorage, http } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { cookieStorage, createStorage } from "wagmi";
 import { mainnet, arbitrum, polygon, optimism, base, baseSepolia } from "wagmi/chains";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 
-export const config = createConfig({
-  storage: createStorage({
-    storage: cookieStorage,
-  }),
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!;
+
+const networks = [base, baseSepolia, mainnet, arbitrum, polygon, optimism];
+export const wagmiAdapter = new WagmiAdapter({
+  storage: createStorage({ storage: cookieStorage }) as any,
   ssr: true,
-  chains: [base, baseSepolia, mainnet, arbitrum, polygon, optimism],
-  connectors: [injected({ target: "metaMask" })],
-  transports: {
-    [base.id]: http(),
-    [baseSepolia.id]: http(),
-    [mainnet.id]: http(),
-    [arbitrum.id]: http(),
-    [polygon.id]: http(),
-    [optimism.id]: http(),
-  },
+  projectId,
+  networks,
 });
+
+export const config = wagmiAdapter.wagmiConfig;
