@@ -2,10 +2,22 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAccount, useBalance, useConnect, useDisconnect, useChainId, useReconnect } from "wagmi";
+import {
+  useAccount,
+  useBalance,
+  useChainId,
+  useConnect,
+  useDisconnect,
+  useEnsAvatar,
+  useEnsName,
+  useReconnect,
+} from "wagmi";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet, Copy, ExternalLink, LogOut } from "lucide-react";
+
+const METAMASK_DOWNLOAD_URL = "https://metamask.io/download/";
 
 function MetaMaskLogo() {
   return (
@@ -93,6 +105,20 @@ export function WalletConnector() {
   const { data: balance } = useBalance({
     address: address as `0x${string}` | undefined,
   });
+  const { data: ensName } = useEnsName({
+    address,
+    chainId: 1,
+    query: {
+      enabled: Boolean(address),
+    },
+  });
+  const { data: ensAvatar } = useEnsAvatar({
+    name: ensName ?? undefined,
+    chainId: 1,
+    query: {
+      enabled: Boolean(ensName),
+    },
+  });
 
   const hasMetaMaskProvider = useMemo(() => {
     if (!mounted || !("ethereum" in window)) return false;
@@ -141,7 +167,7 @@ export function WalletConnector() {
 
     try {
       if (!hasMetaMaskProvider) {
-        window.location.assign("https://metamask.io/download/");
+        window.location.assign(METAMASK_DOWNLOAD_URL);
         return;
       }
 
@@ -151,20 +177,12 @@ export function WalletConnector() {
         : ethereum;
 
       if (!metaMaskProvider?.isMetaMask) {
-        window.location.assign("https://metamask.io/download/");
+        window.location.assign(METAMASK_DOWNLOAD_URL);
         return;
       }
 
-      // Explicitly request account permissions so MetaMask opens its extension approval UI.
-      try {
-        await metaMaskProvider.request({
-          method: "wallet_requestPermissions",
-          params: [{ eth_accounts: {} }],
-        });
-      } catch {
-        // Fallback for environments that only support eth_requestAccounts.
-        await metaMaskProvider.request({ method: "eth_requestAccounts" });
-      }
+      // This is the most direct way to trigger MetaMask's account approval popup.
+      await metaMaskProvider.request({ method: "eth_requestAccounts" });
 
       if (!metaMaskConnector) {
         setLocalError("MetaMask was detected, but connector was unavailable. Reload and try again.");
@@ -180,7 +198,7 @@ export function WalletConnector() {
         return;
       }
       if (/provider not found/i.test(message)) {
-        window.location.assign("https://metamask.io/download/");
+        window.location.assign(METAMASK_DOWNLOAD_URL);
         return;
       }
       setLocalError(message);
@@ -207,8 +225,26 @@ export function WalletConnector() {
             disabled={isConnecting || isRequesting || awaitingApproval}
           >
             <Wallet className="h-5 w-5" />
-            {awaitingApproval ? "Awaiting MetaMask approval..." : isRequesting ? "Opening MetaMask..." : "Connect MetaMask"}
+            {awaitingApproval
+              ? "Awaiting MetaMask approval..."
+              : isRequesting
+                ? "Opening MetaMask..."
+                : hasMetaMaskProvider
+                  ? "Connect MetaMask"
+                  : "Install MetaMask"}
           </Button>
+          {!hasMetaMaskProvider ? (
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="w-full"
+            >
+              <a href={METAMASK_DOWNLOAD_URL} target="_blank" rel="noreferrer">
+                Download MetaMask Extension
+              </a>
+            </Button>
+          ) : null}
           {connectHint ? <p className="text-center text-xs text-muted-foreground">{connectHint}</p> : null}
         </CardContent>
       </Card>
@@ -220,12 +256,17 @@ export function WalletConnector() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
-              <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
-            </div>
+            <Avatar className="h-10 w-10 border border-border/60">
+              {ensAvatar ? <AvatarImage src={ensAvatar} alt={ensName ?? "Wallet avatar"} /> : null}
+              <AvatarFallback className="bg-emerald-500/10 text-emerald-600">
+                {ensName ? ensName.slice(0, 2).toUpperCase() : "0x"}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <CardTitle className="text-lg">Connected</CardTitle>
-              <p className="text-xs text-muted-foreground">MetaMask</p>
+              <p className="text-xs text-muted-foreground">
+                {ensName ? `ENS: ${ensName}` : "MetaMask"}
+              </p>
             </div>
           </div>
         </div>
@@ -233,8 +274,11 @@ export function WalletConnector() {
       <CardContent className="space-y-6">
         <div className="rounded-lg bg-muted/50 p-4">
           <p className="mb-1 text-xs font-medium text-muted-foreground">Wallet Address</p>
-          <div className="flex items-center justify-between">
-            <code className="text-sm font-mono">{address ? truncateAddress(address) : ""}</code>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              {ensName ? <p className="text-sm font-semibold">{ensName}</p> : null}
+              <code className="text-sm font-mono">{address ? truncateAddress(address) : ""}</code>
+            </div>
             <div className="flex gap-1">
               <Button
                 variant="ghost"
