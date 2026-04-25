@@ -244,34 +244,6 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <Sparkles className="h-4 w-4" />
             Start AI Quiz
           </Button>
-          <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
-            <p className="text-sm font-semibold">On-chain payout</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Sends 5 NZD token to your connected wallet:
-            </p>
-            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
-            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
-              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
-            </Button>
-            {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
-            {txHash ? (
-              <p className="mt-1 break-all text-[11px] text-muted-foreground">
-                Tx:{" "}
-                {EXPLORER_TX_BASE[chainId] ? (
-                  <a
-                    href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:no-underline"
-                  >
-                    {txHash}
-                  </a>
-                ) : (
-                  txHash
-                )}
-              </p>
-            ) : null}
-          </div>
         </CardContent>
       </Card>
     );
@@ -375,12 +347,41 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             </CardContent>
           </Card>
         ))}
-        {!state.passed ? (
+        {state.passed ? (
+          <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
+            <p className="text-sm font-semibold">On-chain payout</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sends {reward} dNZD token to your connected wallet:
+            </p>
+            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
+            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
+              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
+            </Button>
+            {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
+            {txHash ? (
+              <p className="mt-1 break-all text-[11px] text-muted-foreground">
+                Tx:{" "}
+                {EXPLORER_TX_BASE[chainId] ? (
+                  <a
+                    href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:no-underline"
+                  >
+                    {txHash}
+                  </a>
+                ) : (
+                  txHash
+                )}
+              </p>
+            ) : null}
+          </div>
+        ) : (
           <Button size="lg" onClick={startQuiz} className="w-full gap-2 font-semibold">
             <Sparkles className="h-4 w-4" />
             Try a fresh quiz
           </Button>
-        ) : null}
+        )}
       </div>
     );
   }
