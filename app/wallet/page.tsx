@@ -30,8 +30,7 @@ export default function WalletPage() {
                 Your Wallet
               </h1>
               <p className="text-muted-foreground">
-                Connect MetaMask, Coinbase Wallet, or any WalletConnect-supported wallet. We use
-                your address as your identity for dNZD payouts.
+                Connect with MetaMask only. We use your address as your identity for dNZD payouts.
               </p>
             </div>
 
