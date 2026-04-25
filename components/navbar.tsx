@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, Wallet, Sparkles } from "lucide-react";
+import { Menu, X, Wallet } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -15,13 +16,15 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-xl">
       <nav className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Sparkles className="h-4 w-4" />
+        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1 shadow-sm">
+            <Image src="/l2earn-icon.svg" alt="L2Earn" width={40} height={40} className="h-full w-full object-contain" unoptimized priority />
           </span>
-          L2Earn
+          <span className="hidden sm:flex h-12 items-center rounded-md bg-white px-3 py-1.5 shadow-sm">
+            <Image src="/l2earn-logo-text.svg" alt="L2Earn" width={200} height={40} className="h-full w-auto object-contain" unoptimized priority />
+          </span>
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">
@@ -29,15 +32,16 @@ export function Navbar() {
             <Link
               key={link.label}
               href={link.href}
-              className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+              className="relative text-sm font-semibold text-foreground/70 hover:text-foreground transition-colors group"
             >
               {link.label}
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-500 ease-out"></span>
             </Link>
           ))}
           <Link href="/wallet">
-            <Button size="sm" className="gap-2 font-semibold">
+            <Button size="sm" className="gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl">
               <Wallet className="h-4 w-4" />
-              Connect Wallet
+              Connect
             </Button>
           </Link>
         </div>
@@ -52,20 +56,20 @@ export function Navbar() {
       </nav>
 
       {mobileMenuOpen && (
-        <div className="border-t border-border/40 bg-background md:hidden">
+        <div className="border-t border-primary/10 bg-gradient-to-b from-background/95 to-background md:hidden">
           <div className="container mx-auto flex flex-col gap-4 px-4 py-4">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+                className="text-sm font-semibold text-foreground/70 hover:text-transparent hover:bg-gradient-to-r hover:from-primary hover:to-accent hover:bg-clip-text transition-all duration-300"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.label}
               </Link>
             ))}
             <Link href="/wallet" onClick={() => setMobileMenuOpen(false)}>
-              <Button size="sm" className="w-full gap-2 font-semibold">
+              <Button size="sm" className="w-full gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300">
                 <Wallet className="h-4 w-4" />
                 Connect Wallet
               </Button>
