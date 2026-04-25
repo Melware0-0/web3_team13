@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { CampaignCard } from "@/components/campaign-card";
+import { CampaignFilter } from "@/components/campaign-filter";
 import { CAMPAIGNS } from "@/lib/campaigns";
 
 export const metadata = {
@@ -27,11 +27,7 @@ export default function CampaignsPage() {
             </p>
           </header>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {CAMPAIGNS.map((c) => (
-              <CampaignCard key={c.id} campaign={c} />
-            ))}
-          </div>
+          <CampaignFilter campaigns={CAMPAIGNS} />
         </div>
       </main>
       <Footer />
