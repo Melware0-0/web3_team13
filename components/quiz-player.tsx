@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -11,6 +11,17 @@ import { creditWallet } from "@/lib/mock-wallet";
 import { getCampaign } from "@/lib/campaigns";
 import { CheckCircle2, XCircle, Sparkles, Wallet, Loader2, Coins } from "lucide-react";
 import Link from "next/link";
+
+const NZD_SEND_AMOUNT = "5";
+
+const EXPLORER_TX_BASE: Record<number, string> = {
+  1: "https://etherscan.io/tx/",
+  10: "https://optimistic.etherscan.io/tx/",
+  137: "https://polygonscan.com/tx/",
+  42161: "https://arbiscan.io/tx/",
+  8453: "https://basescan.org/tx/",
+  84532: "https://sepolia.basescan.org/tx/",
+};
 
 export type QuizQuestion = {
   id: string;
@@ -42,8 +53,12 @@ type Props = {
 
 export function QuizPlayer({ campaignId, rewardCents }: Props) {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
   const [state, setState] = useState<QuizState>({ status: "idle" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [onChainMessage, setOnChainMessage] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [isSendingOnChain, setIsSendingOnChain] = useState(false);
 
   const reward = (rewardCents / 100).toFixed(2);
 
@@ -114,6 +129,52 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
     }
   }
 
+  async function sendRealNzdOnChain() {
+    setOnChainMessage(null);
+    setTxHash(null);
+
+    if (!isConnected || !address || isSendingOnChain) {
+      setOnChainMessage("Connect MetaMask first.");
+      return;
+    }
+
+    setIsSendingOnChain(true);
+    try {
+      const res = await fetch("/api/payout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userAddress: address,
+          campaignId,
+        }),
+      });
+
+      const payload = (await res.json()) as {
+        ok?: boolean;
+        txHash?: string;
+        message?: string;
+        error?: string;
+      };
+
+      if (!res.ok || !payload.ok) {
+        setOnChainMessage(payload.error ?? payload.message ?? "On-chain transfer failed.");
+        return;
+      }
+
+      if (payload.txHash) {
+        setTxHash(payload.txHash);
+      }
+      setOnChainMessage(
+        payload.message ?? `Sent ${NZD_SEND_AMOUNT} NZD from master wallet to ${address}.`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setOnChainMessage(`On-chain transfer failed: ${message}`);
+    } finally {
+      setIsSendingOnChain(false);
+    }
+  }
+
   if (!isConnected) {
     return (
       <Card className="border-border/60 bg-card/60">
@@ -133,6 +194,34 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
               Connect Wallet
             </Button>
           </Link>
+          <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
+            <p className="text-sm font-semibold">On-chain payout</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sends 5 NZD token to your connected wallet:
+            </p>
+            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
+            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
+              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
+            </Button>
+            {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
+            {txHash ? (
+              <p className="mt-1 break-all text-[11px] text-muted-foreground">
+                Tx:{" "}
+                {EXPLORER_TX_BASE[chainId] ? (
+                  <a
+                    href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:no-underline"
+                  >
+                    {txHash}
+                  </a>
+                ) : (
+                  txHash
+                )}
+              </p>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
     );
@@ -155,6 +244,34 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <Sparkles className="h-4 w-4" />
             Start AI Quiz
           </Button>
+          <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
+            <p className="text-sm font-semibold">On-chain payout</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sends 5 NZD token to your connected wallet:
+            </p>
+            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
+            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
+              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
+            </Button>
+            {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
+            {txHash ? (
+              <p className="mt-1 break-all text-[11px] text-muted-foreground">
+                Tx:{" "}
+                {EXPLORER_TX_BASE[chainId] ? (
+                  <a
+                    href={`${EXPLORER_TX_BASE[chainId]}${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:no-underline"
+                  >
+                    {txHash}
+                  </a>
+                ) : (
+                  txHash
+                )}
+              </p>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
     );
