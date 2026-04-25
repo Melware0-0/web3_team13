@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Web3Provider } from "@/components/web3-provider";
 import { WalletConnector } from "@/components/wallet-connector";
 import { DnzdBalance } from "@/components/dnzd-balance";
 import { Navbar } from "@/components/navbar";
@@ -12,7 +11,7 @@ export const metadata = {
 
 export default function WalletPage() {
   return (
-    <Web3Provider>
+    <>
       <Navbar />
       <main className="min-h-[calc(100vh-72px)] bg-gradient-to-b from-primary/5 via-background to-background">
         <div className="container mx-auto px-4 py-8 md:px-6 md:py-12">
@@ -30,7 +29,7 @@ export default function WalletPage() {
                 Your Wallet
               </h1>
               <p className="text-muted-foreground">
-                Connect with MetaMask only. We use your address as your identity for dNZD payouts.
+                Connect with Reown AppKit. We use your wallet address as your identity for dNZD payouts.
               </p>
             </div>
 
@@ -54,16 +53,7 @@ export default function WalletPage() {
                     1
                   </span>
                   <p>
-                    <strong className="text-card-foreground">Install MetaMask</strong> - Download the
-                    MetaMask browser extension from{" "}
-                    <a
-                      href="https://metamask.io"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary underline hover:no-underline"
-                    >
-                      metamask.io
-                    </a>
+                    <strong className="text-card-foreground">Choose a wallet</strong> - Use the connect button above to open the Reown wallet selector for MetaMask, WalletConnect, Coinbase Wallet, and other supported options
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
@@ -71,8 +61,7 @@ export default function WalletPage() {
                     2
                   </span>
                   <p>
-                    <strong className="text-card-foreground">Create a wallet</strong> - Follow the
-                    setup wizard to create your wallet and secure your recovery phrase
+                    <strong className="text-card-foreground">Create or import</strong> - Follow your chosen wallet's setup flow and store your recovery phrase securely
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
@@ -80,8 +69,7 @@ export default function WalletPage() {
                     3
                   </span>
                   <p>
-                    <strong className="text-card-foreground">Connect</strong> - Click the connect
-                    button above and approve the connection in MetaMask
+                    <strong className="text-card-foreground">Connect</strong> - Approve the connection in the Reown modal and your wallet app
                   </p>
                 </div>
               </div>
@@ -89,6 +77,6 @@ export default function WalletPage() {
           </div>
         </div>
       </main>
-    </Web3Provider>
+    </>
   );
 }

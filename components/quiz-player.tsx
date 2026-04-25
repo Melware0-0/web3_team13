@@ -175,10 +175,10 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
           <div>
             <h3 className="text-xl font-bold">Connect a wallet first</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              We need somewhere to send your {reward} dNZD payout when you pass.
+              Use Reown to connect a wallet first, then claim your reward when you pass.
             </p>
           </div>
-          <Link href="/wallet">
+          <Link href={`/wallet?returnTo=${encodeURIComponent(`/campaigns/${campaignId}`)}`}>
             <Button size="lg" className="gap-2 font-semibold">
               <Wallet className="h-4 w-4" />
               Connect Wallet
@@ -313,11 +313,11 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
           <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
             <p className="text-sm font-semibold">Claim your reward</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              We will send {reward} dNZD directly to your connected wallet. You can view it in MetaMask.
+              We will send {reward} dNZD to your connected wallet through the Reown flow. You can track it in your wallet app or on the explorer.
             </p>
             <p className="mt-1 break-all text-xs font-mono">{displayWallet ?? "Connect wallet first"}</p>
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
-              {isSendingOnChain ? "Sending to MetaMask..." : "Send reward to my wallet"}
+              {isSendingOnChain ? "Sending reward..." : "Send reward to my wallet"}
             </Button>
             {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
             {txHash ? (
