@@ -4,7 +4,7 @@ import { mainnet } from "viem/chains";
 
 const publicClient = createPublicClient({
   chain: mainnet,
-  transport: http("https://eth-mainnet.g.alchemy.com/v2/demo"),
+  transport: http("https://eth.publicrpc.com"),
 });
 
 export function useEns(address?: string) {
