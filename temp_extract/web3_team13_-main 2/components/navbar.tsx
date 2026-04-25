@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X, Wallet } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { EnsDisplay } from "@/components/ens-display";
 import { modal } from "@/lib/appkit";
-import { useAccount } from "wagmi";
 
 const navLinks = [
   { href: "/", label: "HOME" },
@@ -15,17 +14,16 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { address: walletAddress } = useAccount();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-xl">
       <nav className="container mx-auto flex items-center justify-between px-4 py-4 md:px-6">
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1 shadow-sm">
-            <span className="text-sm font-bold text-foreground">L2</span>
+            <Image src="/l2earn-icon.svg" alt="L2Earn" width={40} height={40} className="h-full w-full object-contain" unoptimized priority />
           </span>
           <span className="hidden sm:flex h-12 items-center rounded-md bg-white px-3 py-1.5 shadow-sm">
-            <span className="text-sm font-bold text-foreground">L2Earn</span>
+            <Image src="/l2earn-logo-text.svg" alt="L2Earn" width={200} height={40} className="h-full w-auto object-contain" unoptimized priority />
           </span>
         </Link>
 
@@ -40,20 +38,10 @@ export function Navbar() {
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-500 ease-out"></span>
             </Link>
           ))}
-          <Button
-            asChild
-            size="sm"
-            className="gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl"
-          >
+          <Button asChild size="sm" className="gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl">
             <button type="button" onClick={() => modal.open()}>
-              {walletAddress ? (
-                <EnsDisplay address={walletAddress} showAvatar className="flex-row" />
-              ) : (
-                <>
-                  <Wallet className="h-4 w-4" />
-                  Connect
-                </>
-              )}
+              <Wallet className="h-4 w-4" />
+              Connect
             </button>
           </Button>
         </div>
@@ -80,11 +68,7 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <Button
-              asChild
-              size="sm"
-              className="w-full gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300"
-            >
+            <Button asChild size="sm" className="w-full gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300">
               <button
                 type="button"
                 onClick={() => {
@@ -92,14 +76,8 @@ export function Navbar() {
                   modal.open();
                 }}
               >
-                {walletAddress ? (
-                  <EnsDisplay address={walletAddress} showAvatar className="flex-row" />
-                ) : (
-                  <>
-                    <Wallet className="h-4 w-4" />
-                    Connect Wallet
-                  </>
-                )}
+                <Wallet className="h-4 w-4" />
+                Connect Wallet
               </button>
             </Button>
           </div>
