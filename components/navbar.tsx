@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Menu, X, Wallet } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -13,8 +14,8 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
   const metaMaskDownloadUrl = "https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn";
-  const metaMaskExtensionUrl = "chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html";
 
   type MetaMaskProvider = {
     isMetaMask?: boolean;
@@ -34,22 +35,16 @@ export function Navbar() {
     return eth.isMetaMask ? eth : null;
   };
 
-  const openMetaMaskExtension = () => {
-    const tab = window.open(metaMaskExtensionUrl, "_blank", "noopener,noreferrer");
-    if (!tab) {
-      window.open(metaMaskDownloadUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
   const connectMetaMask = async () => {
     const metaMaskProvider = getMetaMaskProvider();
     if (!metaMaskProvider) {
-      window.open(metaMaskDownloadUrl, "_blank", "noopener,noreferrer");
+      window.location.assign(metaMaskDownloadUrl);
       return;
     }
 
     try {
       await metaMaskProvider.request({ method: "eth_requestAccounts" });
+      router.push("/wallet");
     } catch (error) {
       if (
         typeof error === "object" &&
@@ -57,10 +52,11 @@ export function Navbar() {
         "code" in error &&
         (error as { code?: number }).code === -32002
       ) {
-        openMetaMaskExtension();
+        window.alert("MetaMask request is already open. Approve it in the extension, then continue.");
+        router.push("/wallet");
         return;
       }
-      window.open(metaMaskDownloadUrl, "_blank", "noopener,noreferrer");
+      router.push("/wallet");
     }
   };
 
