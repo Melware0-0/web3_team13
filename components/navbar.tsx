@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { Menu, X, Wallet } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { EnsDisplay } from "@/components/ens-display";
 
 const navLinks = [
   { href: "/", label: "HOME" },
@@ -101,10 +102,8 @@ export function Navbar() {
               size="sm"
               className="gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl"
               onClick={openMetaMask}
-              title={walletAddress}
             >
-              <Wallet className="h-4 w-4" />
-              Connect Wallet
+              <EnsDisplay address={walletAddress} showAvatar className="flex-row" />
             </Button>
           ) : (
             <Button
@@ -149,10 +148,8 @@ export function Navbar() {
                   openMetaMask();
                   setMobileMenuOpen(false);
                 }}
-                title={walletAddress}
               >
-                <Wallet className="h-4 w-4" />
-                Connect Wallet
+                <EnsDisplay address={walletAddress} showAvatar className="flex-row" />
               </Button>
             ) : (
               <Button

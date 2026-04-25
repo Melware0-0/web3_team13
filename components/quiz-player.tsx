@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCampaign } from "@/lib/campaigns";
 import { CheckCircle2, XCircle, Sparkles, Wallet, Loader2, Coins, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { EnsDisplay } from "@/components/ens-display";
 
 const NZD_SEND_AMOUNT = "5";
 
@@ -181,7 +182,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <p className="mt-1 text-xs text-muted-foreground">
               Sends 5 NZD token to your connected wallet:
             </p>
-            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
+            {address ? <EnsDisplay address={address} /> : <p className="text-xs text-muted-foreground">Connect wallet first</p>}
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
               {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
             </Button>
@@ -335,7 +336,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <p className="mt-1 text-xs text-muted-foreground">
               We will send {reward} dNZD directly to your connected wallet. You can view it in MetaMask.
             </p>
-            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
+            {address ? <EnsDisplay address={address} /> : <p className="text-xs text-muted-foreground">Connect wallet first</p>}
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
               {isSendingOnChain ? "Sending to MetaMask..." : "Send 5 dNZD to my wallet"}
             </Button>
