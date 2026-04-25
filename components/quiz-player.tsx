@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAppKitAccount } from "@reown/appkit/react";
+import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -40,7 +40,7 @@ type Props = {
 };
 
 export function QuizPlayer({ campaignId, rewardCents }: Props) {
-  const { address, isConnected } = useAppKitAccount();
+  const { address, isConnected } = useAccount();
   const { ensName, ensAvatar } = useEns(address);
   const [state, setState] = useState<QuizState>({ status: "idle" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
