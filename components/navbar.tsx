@@ -38,12 +38,17 @@ export function Navbar() {
   const connectMetaMask = async () => {
     const metaMaskProvider = getMetaMaskProvider();
     if (!metaMaskProvider) {
+      window.alert("MetaMask is not detected in this browser. Redirecting to install page.");
       window.location.assign(metaMaskDownloadUrl);
       return;
     }
 
     try {
-      await metaMaskProvider.request({ method: "eth_requestAccounts" });
+      const accounts = await metaMaskProvider.request({ method: "eth_requestAccounts" });
+      if (!Array.isArray(accounts) || accounts.length === 0) {
+        window.alert("MetaMask did not return an account. Please unlock MetaMask and try again.");
+        return;
+      }
       router.push("/wallet");
     } catch (error) {
       if (
@@ -56,7 +61,14 @@ export function Navbar() {
         router.push("/wallet");
         return;
       }
-      router.push("/wallet");
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as { message?: unknown }).message === "string"
+          ? (error as { message: string }).message
+          : "MetaMask connection failed. Please open MetaMask and try again.";
+      window.alert(message);
     }
   };
 
