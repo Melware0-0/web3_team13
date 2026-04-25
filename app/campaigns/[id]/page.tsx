@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer";
 import { Web3Provider } from "@/components/web3-provider";
 import { QuizPlayer } from "@/components/quiz-player";
 import { Badge } from "@/components/ui/badge";
-import { getCampaign } from "@/lib/campaigns";
+import { CAMPAIGNS, getCampaign } from "@/lib/campaigns";
 import { formatDnzd } from "@/lib/dnzd";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export function generateStaticParams() {
-  return [{ id: "newmoney-101" }];
+  return CAMPAIGNS.map((campaign) => ({ id: campaign.id }));
 }
 
 export default async function CampaignDetailPage({
