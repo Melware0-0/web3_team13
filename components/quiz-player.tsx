@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { creditWallet } from "@/lib/mock-wallet";
+import { getCampaign } from "@/lib/campaigns";
 import { CheckCircle2, XCircle, Sparkles, Wallet, Loader2, Coins } from "lucide-react";
 import Link from "next/link";
 
@@ -30,6 +32,7 @@ export type QuizState =
       feedback: { questionId: string; correct: boolean; explanation: string }[];
     }
   | { status: "credited"; amountCents: number; balanceCents: number }
+  | { status: "claimed"; balanceCents: number }
   | { status: "error"; message: string };
 
 type Props = {
@@ -48,14 +51,15 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
     setState({ status: "loading" });
     setAnswers({});
     try {
-      const res = await fetch("/api/quiz/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaignId }),
-      });
-      if (!res.ok) throw new Error(`Generate failed: ${res.status}`);
-      const data: { quizId: string; questions: QuizQuestion[] } = await res.json();
-      setState({ status: "ready", quizId: data.quizId, questions: data.questions });
+      const campaign = getCampaign(campaignId);
+      if (!campaign) throw new Error("Campaign not found");
+      const quizId = `${campaignId}-${Date.now()}`;
+      const questions = campaign.quizQuestions.map((question) => ({
+        id: question.id,
+        question: question.question,
+        options: question.options,
+      }));
+      setState({ status: "ready", quizId, questions });
     } catch (e) {
       setState({ status: "error", message: (e as Error).message });
     }
@@ -66,33 +70,42 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
     const { quizId, questions } = state;
     setState({ status: "grading", quizId, questions });
     try {
-      const res = await fetch("/api/quiz/grade", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quizId, answers }),
+      const campaign = getCampaign(campaignId);
+      if (!campaign) throw new Error("Campaign not found");
+
+      const feedback = campaign.quizQuestions.map((question) => {
+        const picked = answers[question.id];
+        const correct = picked === question.correctIndex;
+        return {
+          questionId: question.id,
+          correct,
+          explanation: correct
+            ? `Correct. ${question.explanation}`
+            : `The right answer was: "${question.options[question.correctIndex]}". ${question.explanation}`,
+        };
       });
-      if (!res.ok) throw new Error(`Grade failed: ${res.status}`);
-      const data = await res.json();
+      const score = feedback.filter((item) => item.correct).length;
+      const passed = score >= 2;
       setState({
         status: "graded",
-        passed: data.passed,
-        score: data.score,
-        total: data.total,
-        feedback: data.feedback,
+        passed,
+        score,
+        total: campaign.quizQuestions.length,
+        feedback,
       });
 
-      if (data.passed && address) {
-        const credit = await fetch("/api/wallet/credit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ address, campaignId }),
-        });
+      if (passed && address) {
+        const credit = creditWallet(address, campaignId, rewardCents);
         if (credit.ok) {
-          const cdata = await credit.json();
           setState({
             status: "credited",
-            amountCents: cdata.amountCents,
-            balanceCents: cdata.balanceCents,
+            amountCents: rewardCents,
+            balanceCents: credit.balanceCents,
+          });
+        } else if (credit.reason === "already_claimed" && typeof credit.balanceCents === "number") {
+          setState({
+            status: "claimed",
+            balanceCents: credit.balanceCents,
           });
         }
       }
@@ -135,8 +148,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
           <div>
             <h3 className="text-xl font-bold">Ready when you are.</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Watch the video, then we&apos;ll generate a fresh quiz with the AI tutor. Pass 2 of 3
-              to earn {reward} dNZD.
+              Read the campaign brief, then take the quiz. Pass 2 of 3 to earn {reward} dNZD.
             </p>
           </div>
           <Button size="lg" onClick={startQuiz} className="gap-2 font-semibold">
@@ -153,7 +165,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
       <Card className="border-border/60 bg-card/60">
         <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Generating your quiz with the AI tutor...</p>
+          <p className="text-muted-foreground">Preparing your campaign quiz...</p>
         </CardContent>
       </Card>
     );
@@ -202,7 +214,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
           {state.status === "grading" ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Grading with AI tutor...
+              Checking your answers...
             </>
           ) : (
             <>Submit answers</>
@@ -267,6 +279,30 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <h3 className="text-2xl font-black">+{(state.amountCents / 100).toFixed(2)} dNZD</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               New balance: {(state.balanceCents / 100).toFixed(2)} dNZD
+            </p>
+          </div>
+          <Link href="/wallet">
+            <Button size="lg" className="gap-2 font-semibold">
+              <Wallet className="h-4 w-4" />
+              View Wallet
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (state.status === "claimed") {
+    return (
+      <Card className="border-border/60 bg-card/60">
+        <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/20 text-primary">
+            <Coins className="h-7 w-7" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-black">Reward already claimed</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              You already earned this campaign payout. Current balance: {(state.balanceCents / 100).toFixed(2)} dNZD
             </p>
           </div>
           <Link href="/wallet">

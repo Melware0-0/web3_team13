@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Web3Provider } from "@/components/web3-provider";
@@ -11,12 +10,9 @@ export const metadata = {
   description: "Connect a wallet, view your dNZD balance, and see your earnings history.",
 };
 
-export default async function WalletPage() {
-  const headersList = await headers();
-  const cookies = headersList.get("cookie");
-
+export default function WalletPage() {
   return (
-    <Web3Provider cookies={cookies}>
+    <Web3Provider>
       <Navbar />
       <main className="min-h-[calc(100vh-72px)] bg-gradient-to-b from-primary/5 via-background to-background">
         <div className="container mx-auto px-4 py-8 md:px-6 md:py-12">

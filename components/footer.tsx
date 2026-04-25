@@ -34,7 +34,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/api/agents/campaigns" className="transition-colors hover:text-foreground">
+                <Link href="/agent-campaigns.json" className="transition-colors hover:text-foreground">
                   Agent Feed (JSON)
                 </Link>
               </li>

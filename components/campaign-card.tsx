@@ -3,7 +3,7 @@ import { ArrowRight, Coins } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Campaign } from "@/lib/campaigns";
-import { formatDnzd } from "@/lib/store";
+import { formatDnzd } from "@/lib/dnzd";
 
 export function CampaignCard({ campaign }: { campaign: Campaign }) {
   return (
@@ -27,6 +27,9 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
           </p>
           <div className="flex items-end justify-between">
             <div className="flex flex-wrap gap-1.5">
+              <Badge variant="outline" className="text-xs">
+                {campaign.quizQuestions.length} question quiz
+              </Badge>
               {campaign.tags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}

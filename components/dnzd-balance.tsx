@@ -3,38 +3,43 @@
 import { useEffect, useState } from "react";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDnzd } from "@/lib/dnzd";
+import { getWallet, WALLET_UPDATED_EVENT, type WalletTx } from "@/lib/mock-wallet";
 import { Coins, History, Loader2 } from "lucide-react";
-
-type Tx = { campaignId: string; amountCents: number; ts: number };
 
 export function DnzdBalance() {
   const { address, isConnected } = useAppKitAccount();
-  const [balance, setBalance] = useState<string | null>(null);
-  const [txs, setTxs] = useState<Tx[]>([]);
+  const [balanceCents, setBalanceCents] = useState<number | null>(null);
+  const [txs, setTxs] = useState<WalletTx[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!isConnected || !address) {
-      setBalance(null);
+      setBalanceCents(null);
       setTxs([]);
       return;
     }
-    let cancelled = false;
-    (async () => {
+
+    const refreshWallet = () => {
       setLoading(true);
-      try {
-        const res = await fetch(`/api/wallet?address=${address}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        setBalance(data.balance);
-        setTxs(data.txs);
-      } finally {
-        if (!cancelled) setLoading(false);
+      const wallet = getWallet(address);
+      setBalanceCents(wallet.balanceCents);
+      setTxs([...wallet.txs].sort((a, b) => b.ts - a.ts));
+      setLoading(false);
+    };
+
+    refreshWallet();
+
+    const handleUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<{ address?: string }>).detail;
+      if (!detail?.address || detail.address === address.toLowerCase()) {
+        refreshWallet();
       }
-    })();
+    };
+
+    window.addEventListener(WALLET_UPDATED_EVENT, handleUpdate as EventListener);
     return () => {
-      cancelled = true;
+      window.removeEventListener(WALLET_UPDATED_EVENT, handleUpdate as EventListener);
     };
   }, [address, isConnected]);
 
@@ -54,14 +59,14 @@ export function DnzdBalance() {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             L2Earn balance
           </p>
-          {loading && balance === null ? (
+          {loading && balanceCents === null ? (
             <div className="mt-1 flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">Loading...</span>
             </div>
           ) : (
             <p className="mt-1 text-3xl font-black text-primary">
-              {balance ?? "0.00"}{" "}
+              {formatDnzd(balanceCents ?? 0)}{" "}
               <span className="text-base font-semibold text-foreground/60">dNZD</span>
             </p>
           )}

@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import Link from "next/link";
 import { ArrowLeft, Coins } from "lucide-react";
 import { Navbar } from "@/components/navbar";
@@ -8,7 +7,7 @@ import { Web3Provider } from "@/components/web3-provider";
 import { QuizPlayer } from "@/components/quiz-player";
 import { Badge } from "@/components/ui/badge";
 import { getCampaign } from "@/lib/campaigns";
-import { formatDnzd } from "@/lib/store";
+import { formatDnzd } from "@/lib/dnzd";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,6 +16,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     title: c ? `${c.title} | L2Earn` : "Campaign | L2Earn",
     description: c?.summary,
   };
+}
+
+export function generateStaticParams() {
+  return [{ id: "newmoney-101" }];
 }
 
 export default async function CampaignDetailPage({
@@ -32,11 +35,8 @@ export default async function CampaignDetailPage({
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
 
-  const headersList = await headers();
-  const cookies = headersList.get("cookie");
-
   return (
-    <Web3Provider cookies={cookies}>
+    <Web3Provider>
       <Navbar />
       <main className="min-h-[calc(100vh-72px)]">
         <div className="container mx-auto max-w-4xl px-4 py-10 md:px-6 md:py-14">

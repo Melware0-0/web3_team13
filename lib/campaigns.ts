@@ -3,13 +3,18 @@ export type Campaign = {
   brand: string;
   title: string;
   summary: string;
-  /** YouTube embed URL or any iframe-safe video URL */
-  videoUrl: string;
   /** Source-of-truth text the AI tutor draws from. */
   transcript: string;
   /** Reward in dNZD cents. 500 = 5.00 dNZD */
   rewardCents: number;
   tags: string[];
+  quizQuestions: {
+    id: string;
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  }[];
 };
 
 export const CAMPAIGNS: Campaign[] = [
@@ -19,7 +24,6 @@ export const CAMPAIGNS: Campaign[] = [
     title: "What is dNZD?",
     summary:
       "A 60-second intro to NewMoney's NZ-regulated, 1:1 reserve-backed digital dollar. Built for builders.",
-    videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     rewardCents: 500,
     tags: ["NewMoney", "Stablecoins", "Aotearoa"],
     transcript: `
@@ -43,6 +47,47 @@ deep institutional fluency with DeFi-native innovation, reducing FX drag across 
 flows. Use cases include DeFi earning vaults, payment networks, stablecoin FX, payroll, and anything
 that disrupts the status quo.
     `.trim(),
+    quizQuestions: [
+      {
+        id: "q1",
+        question: "What is dNZD?",
+        options: [
+          "A blockchain-based digital representation of the New Zealand Dollar",
+          "A New Zealand government bond",
+          "A volatile cryptocurrency unrelated to NZD",
+          "A KiwiSaver investment fund",
+        ],
+        correctIndex: 0,
+        explanation:
+          "dNZD is presented as a blockchain-based digital representation of NZD, backed by fiat reserves.",
+      },
+      {
+        id: "q2",
+        question: "Which networks does the campaign say dNZD is live on?",
+        options: [
+          "Only Ethereum",
+          "Bitcoin, Litecoin, and Dogecoin",
+          "Ethereum, Base, Polygon, and Solana",
+          "A private NewMoney chain only",
+        ],
+        correctIndex: 2,
+        explanation:
+          "The campaign text names Ethereum, Base, Polygon, and Solana as the current networks.",
+      },
+      {
+        id: "q3",
+        question: "What backs every dNZD token according to the campaign?",
+        options: [
+          "Algorithmic rebalancing",
+          "A basket of crypto assets",
+          "Community staking pools",
+          "Fiat reserves held in trust 1:1 in a New Zealand-registered bank",
+        ],
+        correctIndex: 3,
+        explanation:
+          "The transcript states that every dNZD token is backed 1:1 by fiat reserves held in trust in a New Zealand-registered bank.",
+      },
+    ],
   },
 ];
 
