@@ -150,7 +150,8 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
         setTxHash(payload.txHash);
       }
       setOnChainMessage(
-        payload.message ?? `Sent ${NZD_SEND_AMOUNT} NZD from master wallet to ${address}.`,
+        payload.message ??
+          `${NZD_SEND_AMOUNT} dNZD has been sent to your connected wallet. Open MetaMask to view the transfer.`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -334,13 +335,8 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
         ))}
         {state.passed ? (
           <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
-            <p className="text-sm font-semibold">On-chain payout</p>
+            <p className="text-sm font-semibold">Claim your 5 dNZD reward</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Sends {reward} NZD token to your connected wallet:
-            </p>
-            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
-            <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
-              {isSendingOnChain ? "Sending from master wallet..." : "Complete Campaign (+5 NZD)"}
             <div className="mt-1 flex items-center gap-2">
               {ensAvatar ? (
                 <Image
@@ -353,8 +349,10 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
               ) : null}
               <p className="break-all text-xs font-mono">{displayAddress ?? "Connect wallet first"}</p>
             </div>
+              We will send {reward} dNZD directly to your connected wallet. You can view it in MetaMask.
+            </p>
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
-              {isSendingOnChain ? "Sending from master wallet..." : `Complete Campaign (+${reward} NZD)`}
+              {isSendingOnChain ? "Sending to MetaMask..." : "Send 5 dNZD to my wallet"}
             </Button>
             {onChainMessage ? <p className="mt-2 text-xs text-muted-foreground">{onChainMessage}</p> : null}
             {txHash ? (
