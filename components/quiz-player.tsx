@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCampaign } from "@/lib/campaigns";
-import { CheckCircle2, XCircle, Sparkles, Wallet, Loader2, Coins, ExternalLink } from "lucide-react";
+import { CheckCircle2, XCircle, Sparkles, Wallet, Loader2, Coins, ExternalLink, Trophy } from "lucide-react";
 import Link from "next/link";
 import { EnsDisplay } from "@/components/ens-display";
 
@@ -60,8 +60,43 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
   const [attestationId, setAttestationId] = useState<string | null>(null);
   const [isCreatingAttestation, setIsCreatingAttestation] = useState(false);
   const [quizScore, setQuizScore] = useState<number>(0);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [previousScore, setPreviousScore] = useState<number | null>(null);
+  const [isLoadingCompletion, setIsLoadingCompletion] = useState(true);
 
   const reward = (rewardCents / 100).toFixed(2);
+
+  // Check if user has already completed this campaign
+  useEffect(() => {
+    async function checkCompletion() {
+      if (!address) {
+        setIsLoadingCompletion(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/user-stats?address=${address}`);
+        if (response.ok) {
+          const data = (await response.json()) as {
+            completedCampaigns: Array<{ campaignId: string; score: number }>;
+          };
+          const completed = data.completedCampaigns.find(
+            (c) => c.campaignId === campaignId
+          );
+          if (completed) {
+            setIsCompleted(true);
+            setPreviousScore(completed.score);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check completion status:", error);
+      } finally {
+        setIsLoadingCompletion(false);
+      }
+    }
+
+    checkCompletion();
+  }, [address, campaignId]);
 
   async function startQuiz() {
     setState({ status: "loading" });
@@ -251,18 +286,34 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
     return (
       <Card className="border-border/60 bg-card/60">
         <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
+          {isCompleted && (
+            <div className="w-full rounded-lg border border-primary/40 bg-primary/10 p-4 mb-2">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Trophy className="h-5 w-5 text-primary" />
+                <p className="font-semibold text-primary">Quiz Completed ✓</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                You previously scored {previousScore}/3 on this quiz.
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                You can retake this quiz to improve your score and earn more rewards.
+              </p>
+            </div>
+          )}
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary">
             <Sparkles className="h-7 w-7" />
           </div>
           <div>
-            <h3 className="text-xl font-bold">Ready when you are.</h3>
+            <h3 className="text-xl font-bold">
+              {isCompleted ? "Ready for round two?" : "Ready when you are."}
+            </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Read the campaign brief, then take the quiz. Pass 2 of 3 to earn {reward} dNZD.
             </p>
           </div>
-          <Button size="lg" onClick={startQuiz} className="gap-2 font-semibold">
+          <Button size="lg" onClick={startQuiz} className="gap-2 font-semibold" disabled={isLoadingCompletion}>
             <Sparkles className="h-4 w-4" />
-            Start AI Quiz
+            {isLoadingCompletion ? "Loading..." : "Start AI Quiz"}
           </Button>
         </CardContent>
       </Card>
