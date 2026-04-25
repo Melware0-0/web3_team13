@@ -8,12 +8,9 @@ import {
   useChainId,
   useConnect,
   useDisconnect,
-  useEnsAvatar,
-  useEnsName,
   useReconnect,
 } from "wagmi";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet, Copy, ExternalLink, LogOut } from "lucide-react";
 
@@ -104,20 +101,6 @@ export function WalletConnector() {
 
   const { data: balance } = useBalance({
     address: address as `0x${string}` | undefined,
-  });
-  const { data: ensName } = useEnsName({
-    address,
-    chainId: 1,
-    query: {
-      enabled: Boolean(address),
-    },
-  });
-  const { data: ensAvatar } = useEnsAvatar({
-    name: ensName ?? undefined,
-    chainId: 1,
-    query: {
-      enabled: Boolean(ensName),
-    },
   });
 
   const hasMetaMaskProvider = useMemo(() => {
@@ -256,17 +239,12 @@ export function WalletConnector() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border border-border/60">
-              {ensAvatar ? <AvatarImage src={ensAvatar} alt={ensName ?? "Wallet avatar"} /> : null}
-              <AvatarFallback className="bg-emerald-500/10 text-emerald-600">
-                {ensName ? ensName.slice(0, 2).toUpperCase() : "0x"}
-              </AvatarFallback>
-            </Avatar>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10">
+              <div className="h-3 w-3 animate-pulse rounded-full bg-emerald-500" />
+            </div>
             <div>
               <CardTitle className="text-lg">Connected</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {ensName ? `ENS: ${ensName}` : "MetaMask"}
-              </p>
+              <p className="text-xs text-muted-foreground">MetaMask</p>
             </div>
           </div>
         </div>
@@ -275,10 +253,7 @@ export function WalletConnector() {
         <div className="rounded-lg bg-muted/50 p-4">
           <p className="mb-1 text-xs font-medium text-muted-foreground">Wallet Address</p>
           <div className="flex items-start justify-between gap-3">
-            <div>
-              {ensName ? <p className="text-sm font-semibold">{ensName}</p> : null}
-              <code className="text-sm font-mono">{address ? truncateAddress(address) : ""}</code>
-            </div>
+            <code className="text-sm font-mono">{address ? truncateAddress(address) : ""}</code>
             <div className="flex gap-1">
               <Button
                 variant="ghost"

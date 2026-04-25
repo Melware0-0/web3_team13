@@ -8,9 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCampaign } from "@/lib/campaigns";
-import { useEns, formatAddress } from "@/lib/useEns";
 import { CheckCircle2, XCircle, Sparkles, Wallet, Loader2, Coins, ExternalLink } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 const NZD_SEND_AMOUNT = "5";
@@ -52,7 +50,6 @@ type Props = {
 
 export function QuizPlayer({ campaignId, rewardCents }: Props) {
   const { address, isConnected } = useAccount();
-  const { ensName, ensAvatar } = useEns(address);
   const chainId = useChainId();
   const [state, setState] = useState<QuizState>({ status: "idle" });
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -61,7 +58,6 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
   const [isSendingOnChain, setIsSendingOnChain] = useState(false);
 
   const reward = (rewardCents / 100).toFixed(2);
-  const displayAddress = ensName || address;
 
   async function startQuiz() {
     setState({ status: "loading" });
@@ -337,20 +333,9 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
           <div className="w-full rounded-lg border border-border/50 bg-muted/30 p-4">
             <p className="text-sm font-semibold">Claim your 5 dNZD reward</p>
             <p className="mt-1 text-xs text-muted-foreground">
-            <div className="mt-1 flex items-center gap-2">
-              {ensAvatar ? (
-                <Image
-                  src={ensAvatar}
-                  alt="ENS Avatar"
-                  width={20}
-                  height={20}
-                  className="h-5 w-5 rounded-full"
-                />
-              ) : null}
-              <p className="break-all text-xs font-mono">{displayAddress ?? "Connect wallet first"}</p>
-            </div>
               We will send {reward} dNZD directly to your connected wallet. You can view it in MetaMask.
             </p>
+            <p className="mt-1 break-all text-xs font-mono">{address ?? "Connect wallet first"}</p>
             <Button size="sm" className="mt-3 w-full font-semibold" onClick={sendRealNzdOnChain} disabled={isSendingOnChain}>
               {isSendingOnChain ? "Sending to MetaMask..." : "Send 5 dNZD to my wallet"}
             </Button>
