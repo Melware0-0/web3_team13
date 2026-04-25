@@ -13,6 +13,30 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const metaMaskDownloadUrl = "https://metamask.io/download/";
+
+  const connectMetaMask = async () => {
+    const eth = (window as Window & { ethereum?: { isMetaMask?: boolean; request: (args: { method: string }) => Promise<string[]> } }).ethereum;
+
+    if (!eth || !eth.isMetaMask) {
+      window.open(metaMaskDownloadUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    try {
+      await eth.request({ method: "eth_requestAccounts" });
+    } catch (error) {
+      // If MetaMask already has a pending connect request, bring focus to the extension.
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: number }).code === -32002
+      ) {
+        window.alert("MetaMask already has a pending connection request. Please open the extension and approve it.");
+      }
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-primary/10 bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-xl">
@@ -37,12 +61,14 @@ export function Navbar() {
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-500 ease-out"></span>
             </Link>
           ))}
-          <Link href="/wallet">
-            <Button size="sm" className="gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl">
-              <Wallet className="h-4 w-4" />
-              Connect
-            </Button>
-          </Link>
+          <Button
+            size="sm"
+            onClick={connectMetaMask}
+            className="gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
+            <Wallet className="h-4 w-4" />
+            Connect
+          </Button>
         </div>
 
         <button
@@ -67,12 +93,17 @@ export function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <Link href="/wallet" onClick={() => setMobileMenuOpen(false)}>
-              <Button size="sm" className="w-full gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300">
-                <Wallet className="h-4 w-4" />
-                Connect Wallet
-              </Button>
-            </Link>
+            <Button
+              size="sm"
+              onClick={async () => {
+                setMobileMenuOpen(false);
+                await connectMetaMask();
+              }}
+              className="w-full gap-2 font-semibold bg-primary hover:bg-primary/90 transition-all duration-300"
+            >
+              <Wallet className="h-4 w-4" />
+              Connect Wallet
+            </Button>
           </div>
         </div>
       )}
