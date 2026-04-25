@@ -5,8 +5,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  output: "export",
-  trailingSlash: true,
+  output: isGithubPages ? "export" : undefined,
+  trailingSlash: isGithubPages,
   basePath: isGithubPages ? "/web3_team13" : "",
   assetPrefix: isGithubPages ? "/web3_team13/" : "",
   images: {
