@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -7,11 +7,13 @@ export function Footer() {
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid gap-8 md:grid-cols-3">
           <div>
-            <Link href="/" className="mb-4 flex items-center gap-2 text-lg font-bold text-foreground">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Sparkles className="h-3.5 w-3.5" />
+            <Link href="/" className="mb-4 flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <span className="flex h-9 w-9 items-center justify-center rounded-md bg-white p-1 shadow-sm">
+                <Image src="/l2earn-icon.svg" alt="L2Earn" width={36} height={36} className="h-full w-full object-contain" unoptimized />
               </span>
-              L2Earn
+              <span className="flex h-11 items-center rounded-md bg-white px-3 py-1.5 shadow-sm">
+                <Image src="/l2earn-logo-text.svg" alt="L2Earn" width={170} height={36} className="h-full w-auto object-contain" unoptimized />
+              </span>
             </Link>
             <p className="text-sm leading-relaxed text-muted-foreground">
               Learn-to-Earn for the Great Handover. Built on NewMoney stablecoin
@@ -80,7 +82,7 @@ export function Footer() {
         </div>
         <div className="mt-8 border-t border-border/40 pt-8 text-center text-xs text-muted-foreground">
           <p>
-            &copy; {new Date().getFullYear()} L2Earn · Web3NZ Hackathon Team 13. Demo only — not a
+            &copy; {new Date().getFullYear()} L2Earn · Web3NZ Hackathon Team 13. Demo only - not a
             financial product. dNZD shown is testnet/mock for the hackathon.
           </p>
         </div>
