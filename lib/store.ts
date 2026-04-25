@@ -13,11 +13,22 @@ export type Tx = {
   ts: number;
 };
 
+export type NftClaim = {
+  campaignId: string;
+  tokenId: number;
+  txHash: string;
+  chainId: number;
+  explorerUrl: string;
+  ts: number;
+};
+
 type StoreShape = {
   // address (lowercased) -> balance in cents
   balances: Record<string, number>;
   // address (lowercased) -> tx history
   txs: Record<string, Tx[]>;
+  // address (lowercased) -> NFT badge claim history
+  nftClaims: Record<string, NftClaim[]>;
   // quizId -> generated quiz payload with expiry timestamp
   quizSessions: Record<string, { questions: GeneratedQuestion[]; ts: number }>;
 };
@@ -36,10 +47,11 @@ async function load(): Promise<StoreShape> {
     cache = {
       balances: parsed.balances ?? {},
       txs: parsed.txs ?? {},
+      nftClaims: parsed.nftClaims ?? {},
       quizSessions: parsed.quizSessions ?? {},
     };
   } catch {
-    cache = { balances: {}, txs: {}, quizSessions: {} };
+    cache = { balances: {}, txs: {}, nftClaims: {}, quizSessions: {} };
   }
   return cache;
 }
@@ -70,6 +82,37 @@ export async function listTxs(address: string): Promise<Tx[]> {
 export async function hasClaimed(address: string, campaignId: string): Promise<boolean> {
   const txs = await listTxs(address);
   return txs.some((t) => t.campaignId === campaignId);
+}
+
+export async function listNftClaims(address: string): Promise<NftClaim[]> {
+  const s = await load();
+  return [...(s.nftClaims[norm(address)] ?? [])].sort((a, b) => b.ts - a.ts);
+}
+
+export async function getNftClaim(
+  address: string,
+  campaignId: string,
+): Promise<NftClaim | null> {
+  const claims = await listNftClaims(address);
+  return claims.find((claim) => claim.campaignId === campaignId) ?? null;
+}
+
+export async function recordNftClaim(
+  address: string,
+  claim: NftClaim,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) {
+    return { ok: false, reason: "invalid_address" };
+  }
+
+  const s = await load();
+  const key = norm(address);
+  const already = (s.nftClaims[key] ?? []).some((item) => item.campaignId === claim.campaignId);
+  if (already) return { ok: false, reason: "already_claimed" };
+
+  s.nftClaims[key] = [...(s.nftClaims[key] ?? []), claim];
+  await persist();
+  return { ok: true };
 }
 
 export async function credit(

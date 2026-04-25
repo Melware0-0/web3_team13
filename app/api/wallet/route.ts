@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getBalanceCents, listTxs } from "@/lib/store";
+import { getBalanceCents, listNftClaims, listTxs } from "@/lib/store";
 
 export const runtime = "nodejs";
 
@@ -10,9 +10,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "invalid_address" }, { status: 400 });
   }
 
-  const [balanceCents, txs] = await Promise.all([
+  const [balanceCents, txs, nftClaims] = await Promise.all([
     getBalanceCents(address),
     listTxs(address),
+    listNftClaims(address),
   ]);
 
   return NextResponse.json({
@@ -21,5 +22,6 @@ export async function GET(req: Request) {
     balanceCents,
     balance: (balanceCents / 100).toFixed(2),
     txs,
+    nftClaims,
   });
 }

@@ -29,7 +29,14 @@ export type QuizState =
       total: number;
       feedback: { questionId: string; correct: boolean; explanation: string }[];
     }
-  | { status: "credited"; amountCents: number; balanceCents: number }
+  | {
+      status: "credited";
+      amountCents: number;
+      balanceCents: number;
+      nft:
+        | { ok: true; tokenId: number; txHash: string; explorerUrl: string }
+        | { ok: false; error: string };
+    }
   | { status: "error"; message: string };
 
 type Props = {
@@ -82,7 +89,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
       });
 
       if (data.passed && address) {
-        const credit = await fetch("/api/wallet/credit", {
+        const credit = await fetch("/api/rewards/claim", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ address, campaignId }),
@@ -93,6 +100,7 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             status: "credited",
             amountCents: cdata.amountCents,
             balanceCents: cdata.balanceCents,
+            nft: cdata.nft,
           });
         }
       }
@@ -268,6 +276,21 @@ export function QuizPlayer({ campaignId, rewardCents }: Props) {
             <p className="mt-1 text-sm text-muted-foreground">
               New balance: {(state.balanceCents / 100).toFixed(2)} dNZD
             </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {state.nft.ok
+                ? `Badge NFT minted on Base Sepolia. Token #${state.nft.tokenId}.`
+                : `dNZD credited. NFT mint status: ${state.nft.error}.`}
+            </p>
+            {state.nft.ok ? (
+              <a
+                href={state.nft.explorerUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                View NFT mint transaction
+              </a>
+            ) : null}
           </div>
           <Link href="/wallet">
             <Button size="lg" className="gap-2 font-semibold">

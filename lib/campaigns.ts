@@ -9,6 +9,8 @@ export type Campaign = {
   transcript: string;
   /** Reward in dNZD cents. 500 = 5.00 dNZD */
   rewardCents: number;
+  /** ERC-1155 token ID for the completion badge */
+  badgeTokenId: number;
   tags: string[];
 };
 
@@ -21,6 +23,7 @@ export const CAMPAIGNS: Campaign[] = [
       "A 60-second intro to NewMoney's NZ-regulated, 1:1 reserve-backed digital dollar. Built for builders.",
     videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     rewardCents: 500,
+    badgeTokenId: 101,
     tags: ["NewMoney", "Stablecoins", "Aotearoa"],
     transcript: `
 NewMoney is a New Zealand-founded fintech building stable, transparent digital cash for Kiwis and Aussies.
@@ -48,3 +51,6 @@ that disrupts the status quo.
 
 export const getCampaign = (id: string): Campaign | undefined =>
   CAMPAIGNS.find((c) => c.id === id);
+
+export const getCampaignByBadgeTokenId = (tokenId: number): Campaign | undefined =>
+  CAMPAIGNS.find((c) => c.badgeTokenId === tokenId);

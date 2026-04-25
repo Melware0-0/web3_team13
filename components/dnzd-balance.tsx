@@ -3,20 +3,30 @@
 import { useEffect, useState } from "react";
 import { useAppKitAccount } from "@reown/appkit/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Coins, History, Loader2 } from "lucide-react";
+import { Award, Coins, ExternalLink, History, Loader2 } from "lucide-react";
 
 type Tx = { campaignId: string; amountCents: number; ts: number };
+type NftClaim = {
+  campaignId: string;
+  tokenId: number;
+  txHash: string;
+  chainId: number;
+  explorerUrl: string;
+  ts: number;
+};
 
 export function DnzdBalance() {
   const { address, isConnected } = useAppKitAccount();
   const [balance, setBalance] = useState<string | null>(null);
   const [txs, setTxs] = useState<Tx[]>([]);
+  const [nftClaims, setNftClaims] = useState<NftClaim[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!isConnected || !address) {
       setBalance(null);
       setTxs([]);
+      setNftClaims([]);
       return;
     }
     let cancelled = false;
@@ -29,6 +39,7 @@ export function DnzdBalance() {
         if (cancelled) return;
         setBalance(data.balance);
         setTxs(data.txs);
+        setNftClaims(data.nftClaims ?? []);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -91,6 +102,43 @@ export function DnzdBalance() {
                   <span className="text-sm font-bold text-primary">
                     +{(t.amountCents / 100).toFixed(2)} dNZD
                   </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <p className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <Award className="h-3.5 w-3.5" />
+            Base Sepolia badges
+          </p>
+          {nftClaims.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border/60 p-4 text-center text-sm text-muted-foreground">
+              No badge NFTs minted yet. Pass a campaign quiz to mint your first completion badge.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border/40 rounded-lg border border-border/40 bg-background/40">
+              {nftClaims.map((claim) => (
+                <li
+                  key={`${claim.campaignId}-${claim.txHash}`}
+                  className="flex items-center justify-between gap-3 p-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold">{claim.campaignId}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Token #{claim.tokenId} on chain {claim.chainId}
+                    </p>
+                  </div>
+                  <a
+                    href={claim.explorerUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                  >
+                    View tx
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
                 </li>
               ))}
             </ul>
