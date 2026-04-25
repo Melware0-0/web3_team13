@@ -3,7 +3,6 @@ import { createPublicClient, createWalletClient, erc20Abi, formatUnits, http, pa
 import { privateKeyToAccount } from "viem/accounts";
 import { base, baseSepolia } from "viem/chains";
 import { getClaim, markClaim } from "@/lib/payout-claims";
-import { createHash } from "node:crypto";
 
 export const runtime = "nodejs";
 
@@ -47,25 +46,20 @@ export async function POST(req: Request) {
   const payoutAmount = process.env.NZD_PAYOUT_AMOUNT?.trim() ?? "5";
   const fallbackTokenDecimals = Number.parseInt(process.env.NZD_TOKEN_DECIMALS?.trim() ?? "18", 10);
   const chainId = Number.parseInt(process.env.EVM_CHAIN_ID?.trim() ?? "84532", 10);
-  const forceDemoMode = process.env.PAYOUT_DEMO_MODE?.trim().toLowerCase() === "true";
-  const demoMode = forceDemoMode || !privateKey;
 
-  if (!demoMode && !privateKey) {
+  if (!privateKey) {
     return serverError("MASTER_WALLET_PRIVATE_KEY is not configured.");
   }
-  if (!demoMode && !/^0x[a-fA-F0-9]{40}$/.test(configuredMasterAddress)) {
+  if (!/^0x[a-fA-F0-9]{40}$/.test(configuredMasterAddress)) {
     return serverError("MASTER_WALLET_ADDRESS is invalid.");
   }
-  if (!demoMode && !/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) {
+  if (!/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) {
     return serverError("NZD_TOKEN_ADDRESS is invalid.");
   }
-  if (!demoMode && !rpcUrl) {
+  if (!rpcUrl) {
     return serverError("EVM_RPC_URL is not configured.");
   }
-  if (
-    !demoMode &&
-    (!Number.isFinite(fallbackTokenDecimals) || fallbackTokenDecimals < 0 || fallbackTokenDecimals > 36)
-  ) {
+  if (!Number.isFinite(fallbackTokenDecimals) || fallbackTokenDecimals < 0 || fallbackTokenDecimals > 36) {
     return serverError("NZD_TOKEN_DECIMALS is invalid.");
   }
 
@@ -86,21 +80,6 @@ export async function POST(req: Request) {
         },
         { status: 409 },
       );
-    }
-
-    if (demoMode) {
-      const txHash = `0x${createHash("sha256")
-        .update(`${campaignId}:${userAddress}:${Date.now()}`)
-        .digest("hex")}`;
-
-      await markClaim(campaignId, userAddress, txHash);
-
-      return NextResponse.json({
-        ok: true,
-        txHash,
-        message:
-          "Demo payout recorded. Set MASTER_WALLET_PRIVATE_KEY (or PAYOUT_DEMO_MODE=false) to send a real on-chain transfer.",
-      });
     }
 
     const account = privateKeyToAccount(privateKey as `0x${string}`);
